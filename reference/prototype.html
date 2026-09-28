@@ -1,0 +1,1113 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NOC cooling alert, Thermal Instrument</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@62..125,100..900&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ground:#E4EAEE; --ink:#0B1A24; --muted:#4A5E6B; --line:rgba(11,26,36,.16); --accent:#3E6652;
+  --font:'Archivo','Arial Narrow',system-ui,-apple-system,sans-serif;
+  /* app tokens: the instrument is always dark, like the room it lives in */
+  --c-ground:#0A1822; --c-raise:#112836; --c-frost:#E3ECF1; --c-steel:#8FA4B2; --c-rule:rgba(227,236,241,.13);
+  --ok:#74CFEA; --rec:#9ED9C4; --warn:#FFB547; --crit:#C96764; --crit-ink:#1A0605;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){ --ground:#060E14; --ink:#DCE7EE; --muted:#8196A4; --line:rgba(220,231,238,.14); --accent:#7FA38F; }
+}
+:root[data-theme="dark"]{ --ground:#060E14; --ink:#DCE7EE; --muted:#8196A4; --line:rgba(220,231,238,.14); --accent:#7FA38F; }
+*,*::before,*::after{ box-sizing:inherit; }
+html{ scroll-padding-top:env(safe-area-inset-top,0px); height:100%; }
+html,body{ margin:0; }
+body{ min-height:100%; background:var(--ground); color:var(--ink); font-family:var(--font); -webkit-font-smoothing:antialiased; }
+[hidden]{ display:none !important; }
+.sr-only{ position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; }
+
+/* ---------- stage ---------- */
+.stage{ min-height:100vh; display:flex; align-items:center; justify-content:center; gap:72px; padding:40px 24px; }
+.device{ flex:none; width:390px; height:844px; padding:10px; border-radius:54px; background:#1A2229;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.09), 0 0 0 1px rgba(0,0,0,.35), 0 50px 90px -40px rgba(0,0,0,.6); }
+
+/* ---------- app ---------- */
+.app{ position:relative; width:100%; height:100%; border-radius:44px; overflow:hidden; container-type:size;
+  display:flex; flex-direction:column; background:var(--c-ground); color:var(--c-frost); --sc:var(--ok); }
+.app[data-state="recovering"]{ --sc:var(--rec); }
+.app[data-state="rising"]{ --sc:var(--warn); }
+.app[data-state="critical"]{ --sc:var(--crit); }
+.app::after{ content:""; position:absolute; inset:0; border-radius:inherit; pointer-events:none; opacity:0;
+  box-shadow:inset 0 0 120px rgba(201,103,100,.10); transition:opacity .9s ease .2s; }
+.app[data-state="critical"]::after{ opacity:1; }
+
+.bar{ flex:none; height:60px; display:flex; align-items:flex-end; justify-content:space-between; padding:0 24px 10px; }
+.site{ font-size:15px; font-variation-settings:'wdth' 100,'wght' 700; }
+.aisle{ font-size:13px; color:var(--c-steel); margin-left:8px; font-variation-settings:'wdth' 100,'wght' 450; }
+.feed{ display:flex; align-items:center; gap:8px; font-size:13px; color:var(--c-steel); font-variant-numeric:tabular-nums; }
+.dot{ position:relative; width:8px; height:8px; border-radius:50%; background:var(--sc); transition:background .4s; }
+.dot.beat::after{ content:""; position:absolute; inset:-4px; border-radius:50%; border:1.5px solid var(--sc); animation:ring .9s ease-out forwards; }
+@keyframes ring{ from{ opacity:.9; transform:scale(.6); } to{ opacity:0; transform:scale(2.1); } }
+
+.body{ flex:1; min-height:0; display:grid; --rf:1.25fr; --rq:0fr; --rr:.8fr; --ra:.36fr;
+  grid-template-rows:minmax(0,var(--rf)) minmax(0,var(--rq)) minmax(0,var(--rr)) minmax(0,var(--ra));
+  transition:grid-template-rows .75s cubic-bezier(.65,0,.35,1); }
+.app[data-state="recovering"] .body{ --rf:1.5fr; --rr:.85fr; --ra:.6fr; }
+.app[data-state="rising"] .body{ --rf:1.7fr; --rr:.9fr; --ra:.72fr; }
+.app[data-state="critical"] .body,.app[data-state="offline"] .body{ --rf:1.8fr; --rr:.95fr; --ra:.72fr; }
+.app[data-state="offline"]{ --sc:#8FA4B2; }
+.app[data-state="offline"] .num{ font-size:min(77px,9.1cqh); font-variation-settings:'wdth' 104,'wght' 820; color:#5D7282; }
+.app[data-outcome="fail"] .field canvas{ filter:saturate(.55) brightness(.85); transition:filter 1.2s; }
+.app[data-multi="1"] .body{ --rf:1.5fr; --rq:.36fr; --rr:.95fr; }
+.app[data-multi="1"][data-state] .num{ font-size:min(60px,7.1cqh); }
+.app[data-multi="1"] .readout{ gap:6px; padding-top:8px; }
+.queue{ min-height:0; overflow:hidden; display:flex; flex-direction:column; justify-content:flex-end; padding:0 14px; }
+.q{ display:flex; align-items:center; gap:11px; width:100%; margin-top:8px; padding:10px 14px; border:0; border-radius:16px; cursor:pointer; text-align:left;
+  background:var(--c-raise); color:var(--c-frost); font-family:inherit;
+  animation:qin .6s cubic-bezier(.3,1.3,.5,1) .35s both; }
+.q .glyph{ color:var(--qc); }
+.q .qm{ display:flex; flex-direction:column; gap:2px; min-width:0; }
+.q .qh{ display:flex; align-items:baseline; gap:8px; }
+.q .qid{ font-size:15px; font-variation-settings:'wdth' 100,'wght' 720; }
+.q .qw{ font-size:13.5px; color:var(--qc); font-variation-settings:'wdth' 100,'wght' 620; }
+.q .qu{ font-size:11.5px; padding:2px 7px; border-radius:6px; background:var(--qc); color:var(--crit-ink); font-variation-settings:'wdth' 100,'wght' 700; }
+.q .qc{ font-size:12.5px; color:var(--c-steel); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.q .qt{ margin-left:auto; font-size:16px; font-variant-numeric:tabular-nums; font-variation-settings:'wdth' 90,'wght' 700; color:var(--qc); white-space:nowrap; }
+.q:focus-visible{ outline:3px solid var(--c-frost); outline-offset:2px; }
+@keyframes qin{ from{ opacity:0; transform:translateY(-14px) scale(.97); } to{ opacity:1; transform:none; } }
+.readout.swap{ animation:swapin .5s cubic-bezier(.3,1.1,.4,1); }
+@keyframes swapin{ from{ opacity:0; transform:translateX(28px); } to{ opacity:1; transform:none; } }
+
+.field{ position:relative; min-height:0; margin:0 10px; border-radius:24px; overflow:hidden; background:#10263A; border:1px solid var(--c-rule);
+  transform-origin:50% 100%; transition:transform 1s cubic-bezier(.3,1.25,.4,1) .15s; }
+.app[data-state="critical"] .field{ transform:perspective(900px) rotateX(15deg); }
+.shock{ position:absolute; z-index:3; width:0; height:0; border-radius:50%; transform:translate(-50%,-50%); pointer-events:none; opacity:0;
+  border:2px solid var(--crit); box-shadow:0 0 28px rgba(201,103,100,.55), inset 0 0 28px rgba(201,103,100,.35); }
+.shock.go{ animation:shock 1.3s cubic-bezier(.12,.6,.3,1) forwards; }
+.shock.go.b{ animation-delay:.2s; }
+@keyframes shock{ 0%{ width:16px; height:16px; opacity:1; } 100%{ width:1100px; height:1100px; opacity:0; } }
+.field canvas{ display:block; width:100%; height:100%; }
+.event{ position:absolute; top:10px; left:50%; z-index:2; display:flex; align-items:center; gap:8px; white-space:nowrap;
+  padding:7px 13px; border-radius:999px; background:rgba(10,24,34,.94); border:1px solid var(--c-rule); color:var(--c-frost);
+  font-size:13px; font-variation-settings:'wdth' 100,'wght' 640; opacity:0; transform:translate(-50%,-150%);
+  transition:transform .5s cubic-bezier(.3,1.35,.5,1), opacity .3s; pointer-events:none; }
+.event::before{ content:""; width:7px; height:7px; border-radius:50%; background:var(--crit); }
+.event.cool::before{ background:var(--ok); }
+.event.on{ opacity:1; transform:translate(-50%,0); }
+
+.readout{ min-height:0; display:flex; flex-direction:column; justify-content:flex-end; gap:6px; padding:10px 22px 8px; }
+.state{ white-space:nowrap; display:flex; align-items:center; gap:10px; color:var(--sc); font-size:13px; font-variation-settings:'wdth' 100,'wght' 650; transition:color .4s; }
+.glyph{ flex:none; width:14px; height:14px; }
+.hyst{ margin-left:auto; display:flex; align-items:center; gap:5px; color:var(--c-steel); font-size:12px; font-variation-settings:'wdth' 100,'wght' 500; opacity:0; transition:opacity .3s; }
+.hyst.on{ opacity:1; }
+.tick{ width:14px; height:4px; border-radius:2px; background:var(--c-rule); transition:background .3s; }
+.tick.f{ background:var(--sc); }
+
+.num{ display:flex; align-items:flex-start; line-height:1; color:var(--c-frost);
+  font-size:min(64px,7.7cqh); font-variation-settings:'wdth' 68,'wght' 380; letter-spacing:-.01em;
+  transition:font-size .65s cubic-bezier(.65,0,.35,1) .1s, font-variation-settings .65s cubic-bezier(.65,0,.35,1) .1s, color .5s; }
+.app[data-state="recovering"] .num{ font-size:min(70px,8.4cqh); font-variation-settings:'wdth' 74,'wght' 480; }
+.app[data-state="rising"] .num{ font-size:min(76px,9.1cqh); font-variation-settings:'wdth' 84,'wght' 620; }
+.app[data-state="critical"] .num{ font-size:min(73px,8.5cqh); font-variation-settings:'wdth' 104,'wght' 820; color:var(--crit); }
+.dg{ display:inline-block; width:1ch; height:1em; overflow:hidden; font-variant-numeric:tabular-nums; }
+.strip{ display:block; transition:transform .5s cubic-bezier(.3,.7,.2,1); }
+.strip span{ display:block; height:1em; line-height:1; text-align:center; }
+.pt{ display:inline-block; width:.24em; text-align:center; }
+.unit{ font-size:.26em; margin:.16em 0 0 .14em; color:var(--c-steel); font-variation-settings:'wdth' 100,'wght' 500; }
+
+.meta{ display:flex; justify-content:space-between; gap:12px; font-size:12px; color:var(--c-steel); }
+.rate{ color:var(--sc); font-variant-numeric:tabular-nums; font-variation-settings:'wdth' 100,'wght' 620; transition:color .4s; }
+.spark{ display:block; width:100%; height:31px; overflow:visible; }
+.spark .now{ stroke:var(--c-rule); stroke-width:1; vector-effect:non-scaling-stroke; }
+.spark .pno{ fill:none; stroke:var(--sc); stroke-width:1.5; stroke-dasharray:4 3; opacity:.8; vector-effect:non-scaling-stroke; }
+.spark .pbg{ fill:none; stroke:var(--ok); stroke-width:1.5; opacity:.28; vector-effect:non-scaling-stroke; }
+.spark .pb{ fill:none; stroke:var(--ok); stroke-width:2.6; stroke-linecap:round; vector-effect:non-scaling-stroke; }
+.proj{ margin:0; font-size:12px; line-height:1.3; color:var(--c-steel); }
+.proj .a{ color:var(--sc); font-variation-settings:'wdth' 100,'wght' 620; }
+.proj .b{ color:var(--ok); font-variation-settings:'wdth' 100,'wght' 620; }
+.spark .ln{ fill:none; stroke:var(--sc); stroke-width:2; stroke-linejoin:round; vector-effect:non-scaling-stroke; transition:stroke .4s; }
+.spark .lim{ stroke:var(--c-rule); stroke-width:1; stroke-dasharray:3 4; vector-effect:non-scaling-stroke; }
+.spark .hd{ fill:var(--sc); }
+
+/* ---------- action slab ---------- */
+.action{ min-height:0; padding:0 12px 12px; display:flex; flex-direction:column; justify-content:flex-end; }
+.slab{ display:flex; flex-direction:column; justify-content:flex-end; gap:10px; padding:14px 14px 10px; border-radius:20px;
+  background:transparent; color:var(--c-frost); transition:background .5s, color .4s; }
+.app[data-state="recovering"] .slab{ background:var(--c-raise); }
+.app[data-state="rising"] .slab{ background:var(--c-raise); animation:rise-soft .55s cubic-bezier(.3,1.2,.5,1) .3s both; }
+.app[data-state="critical"] .slab{ background:var(--c-raise); color:var(--c-frost); animation:rise .8s cubic-bezier(.3,1.3,.5,1) .42s both; }
+@keyframes rise{ from{ transform:translateY(55%); opacity:0; } to{ transform:none; opacity:1; } }
+@keyframes rise-soft{ from{ transform:translateY(22%); opacity:0; } to{ transform:none; opacity:1; } }
+
+.calm-msg{ margin:0; padding:0 4px 2px; font-size:12.5px; line-height:1.4; color:var(--c-steel); }
+.why{ margin:0; font-size:12px; line-height:1.45; max-width:38ch; color:rgba(227,236,241,.82); font-variation-settings:'wdth' 100,'wght' 450; }
+.app[data-state="critical"] .why{ font-variation-settings:'wdth' 100,'wght' 560; }
+.status.done::before{ content:'✓'; margin-right:7px; font-variation-settings:'wdth' 100,'wght' 800; }
+.status.fresh{ animation:fresh 1.4s ease-out; }
+@keyframes fresh{ 0%{ transform:translateY(8px); opacity:0; } 25%{ transform:none; opacity:1; } }
+.status{ margin:0; font-size:12px; line-height:1.45; font-variation-settings:'wdth' 100,'wght' 620; }
+
+.hold{ flex:none; position:relative; overflow:hidden; width:100%; height:44px; border:0; border-radius:12px; cursor:pointer;
+  font-family:inherit; font-size:13.5px; font-variation-settings:'wdth' 100,'wght' 720;
+  background:var(--warn); color:#1E1204; touch-action:none; user-select:none; -webkit-user-select:none; -webkit-touch-callout:none; }
+.app[data-state="critical"] .hold{ height:44px; font-size:13.5px; background:#A84A48; color:#FFFFFF; }
+.hold .fill{ position:absolute; inset:0; transform-origin:left center; transform:scaleX(var(--p,0)); background:rgba(255,255,255,.35); }
+.app[data-state="critical"] .hold .fill{ background:rgba(255,255,255,.2); }
+.hold .lbl{ position:relative; }
+.row{ display:flex; justify-content:space-between; align-items:center; gap:12px; }
+.ghost{ padding:2px 2px 4px; border:0; background:none; cursor:pointer; color:inherit;
+  font-family:inherit; font-size:12px; font-variation-settings:'wdth' 100,'wght' 600; text-decoration:underline; text-underline-offset:3px; }
+.hold:focus-visible,.ghost:focus-visible{ outline:3px solid var(--c-frost); outline-offset:3px; }
+
+/* ---------- outcome sheet ---------- */
+.outcome{ position:absolute; left:12px; right:12px; bottom:12px; z-index:4; padding:20px 20px 16px; border-radius:28px; color:var(--c-frost);
+  background:#0F2432; box-shadow:0 -10px 36px -12px rgba(0,0,0,.4), inset 0 0 0 1px var(--c-rule);
+  animation:rise .85s cubic-bezier(.3,1.3,.5,1) .2s both; }
+.outcome.leaving{ animation:none; transform:translateY(110%); opacity:0; transition:transform .55s cubic-bezier(.5,0,.75,0), opacity .4s .15s; }
+.outcome.mixed .o-head .glyph{ color:var(--warn); }
+.outcome.mixed .o-primary{ background:var(--warn); color:#1E1204; }
+.outcome.fail{ background:#0F2432; }
+.o-head{ display:flex; align-items:center; gap:11px; }
+.o-head .glyph{ width:20px; height:20px; color:var(--ok); }
+.outcome.fail .o-head .glyph{ color:var(--crit); }
+.outcome h2{ margin:0; font-size:21px; line-height:1.05; font-weight:normal; font-variation-settings:'wdth' 78,'wght' 760; }
+.outcome p{ margin:12px 0 18px; font-size:13.5px; line-height:1.45; color:rgba(227,236,241,.86); }
+.o-stats{ display:grid; grid-template-columns:repeat(3,1fr); gap:12px; margin:0 0 20px; padding:16px 0 0; border-top:1px solid var(--c-rule); }
+.o-stats dt{ font-size:11.5px; color:var(--c-steel); white-space:nowrap; }
+.o-stats dd{ margin:4px 0 0; font-size:18px; font-variant-numeric:tabular-nums; font-variation-settings:'wdth' 80,'wght' 720; }
+.o-btns{ display:flex; align-items:center; gap:14px; }
+.o-primary{ flex:1; height:48px; border:0; border-radius:14px; cursor:pointer; font-family:inherit; font-size:15.5px; font-variation-settings:'wdth' 100,'wght' 720;
+  background:var(--ok); color:#06202B; }
+.outcome.fail .o-primary{ background:#A84A48; color:#FFFFFF; }
+.o-primary:disabled{ opacity:.75; cursor:default; }
+.o-primary:focus-visible{ outline:3px solid var(--c-frost); outline-offset:3px; }
+
+/* ---------- intro ---------- */
+.intro{ position:absolute; inset:0; z-index:7; display:flex; flex-direction:column; justify-content:flex-end; padding:28px 24px 30px;
+  background:linear-gradient(to top, rgba(6,14,20,.96) 45%, rgba(6,14,20,.55));
+  -webkit-backdrop-filter:blur(6px); backdrop-filter:blur(6px); transition:opacity .45s ease; }
+.intro.gone{ opacity:0; pointer-events:none; }
+.intro .i-kicker{ font-size:13px; color:var(--c-steel); font-variant-numeric:tabular-nums; }
+.intro h2{ margin:8px 0 10px; font-size:32px; line-height:1.02; font-weight:normal; font-variation-settings:'wdth' 74,'wght' 740; }
+.intro p{ margin:0 0 24px; font-size:14.5px; line-height:1.5; color:rgba(227,236,241,.82); max-width:32ch; }
+.i-start{ height:50px; border:0; border-radius:14px; cursor:pointer; font-family:inherit; font-size:15.5px;
+  font-variation-settings:'wdth' 100,'wght' 720; background:var(--c-frost); color:#0A1822; }
+.i-start:focus-visible,.i-look:focus-visible{ outline:3px solid var(--ok); outline-offset:3px; }
+.i-look{ margin-top:14px; align-self:center; padding:4px; border:0; background:none; cursor:pointer; color:var(--c-steel);
+  font-family:inherit; font-size:13.5px; text-decoration:underline; text-underline-offset:3px; }
+.demo-pill,.to-app{ display:none; }
+
+/* ---------- lock screen ---------- */
+.lock{ position:absolute; inset:0; z-index:6; display:flex; flex-direction:column; align-items:center; padding:92px 14px 40px;
+  background:rgba(4,10,14,.4); -webkit-backdrop-filter:blur(22px) brightness(.5) saturate(.8); backdrop-filter:blur(22px) brightness(.5) saturate(.8);
+  transition:opacity .5s ease, transform .5s cubic-bezier(.3,0,.2,1); }
+.lock.opening{ opacity:0; transform:scale(1.08); pointer-events:none; }
+.lock-date{ font-size:17px; color:rgba(227,236,241,.8); font-variation-settings:'wdth' 100,'wght' 500; }
+.lock-time{ font-size:92px; line-height:1; margin-top:4px; font-variation-settings:'wdth' 70,'wght' 300; font-variant-numeric:tabular-nums; }
+.notif{ width:100%; margin-top:44px; display:grid; grid-template-columns:1fr auto; gap:3px 8px; text-align:left; cursor:pointer;
+  padding:14px 16px 15px; border:0; border-radius:22px; background:rgba(30,44,54,.8); color:var(--c-frost); font-family:inherit;
+  opacity:0; transform:translateY(-40px) scale(.96); transition:transform .6s cubic-bezier(.3,1.35,.5,1), opacity .35s; }
+.notif.in{ opacity:1; transform:none; }
+.notif .n-app{ font-size:12.5px; color:var(--c-steel); font-variation-settings:'wdth' 100,'wght' 600; }
+.notif .n-when{ font-size:12.5px; color:var(--c-steel); }
+.notif strong{ grid-column:1/-1; font-size:15.5px; font-variation-settings:'wdth' 100,'wght' 680; font-weight:normal; }
+.notif .n-body{ grid-column:1/-1; font-size:14.5px; line-height:1.35; color:rgba(227,236,241,.85); }
+.notif.crit{ background:rgba(44,24,20,.85); }
+.notif.crit strong{ color:var(--crit); }
+.notif:focus-visible{ outline:3px solid var(--c-frost); outline-offset:3px; }
+.lock-hint{ margin-top:auto; font-size:13px; color:rgba(227,236,241,.55); }
+
+/* ---------- reduced motion: a designed second choreography ---------- */
+.app[data-motion="reduced"],.app[data-motion="reduced"] *,.app[data-motion="reduced"]::after{
+  transition-duration:0s !important; transition-delay:0s !important; animation:none !important; }
+.app[data-motion="reduced"] .body.xfade{ animation:xf .35s ease-out !important; }
+@keyframes xf{ from{ opacity:.3; } to{ opacity:1; } }
+
+/* ---------- panel ---------- */
+.panel{ max-width:340px; }
+.panel h1{ margin:0 0 14px; font-size:36px; line-height:1.02; letter-spacing:-.01em; font-variation-settings:'wdth' 72,'wght' 720; }
+.panel p{ margin:0 0 14px; font-size:15.5px; line-height:1.5; color:var(--muted); }
+.ctrl{ margin:24px 0 8px; }
+.ctrl label{ display:flex; justify-content:space-between; font-size:14.5px; font-variation-settings:'wdth' 100,'wght' 600; margin-bottom:8px; }
+.ctrl output{ font-variant-numeric:tabular-nums; color:var(--muted); }
+.ctrl input[type=range]{ width:100%; accent-color:#950606; }
+.btns{ display:flex; gap:10px; margin:14px 0; flex-wrap:wrap; }
+.btn{ padding:11px 16px; border-radius:12px; border:1px solid var(--line); background:transparent; color:var(--ink); cursor:pointer;
+  font-family:inherit; font-size:14.5px; font-variation-settings:'wdth' 100,'wght' 620; }
+.btn:disabled{ opacity:.55; cursor:default; }
+.btn.primary{ background:var(--ink); color:var(--ground); border-color:transparent; }
+.btn:focus-visible,.check input:focus-visible,.ctrl input:focus-visible{ outline:3px solid var(--accent); outline-offset:2px; }
+.check{ display:flex; align-items:center; gap:10px; font-size:14.5px; cursor:pointer; }
+.check input{ width:18px; height:18px; accent-color:var(--accent); }
+.steps{ margin:0 0 20px; padding:0 0 0 20px; color:var(--muted); font-size:14.5px; line-height:1.5; }
+.steps li{ margin-bottom:6px; padding-left:4px; }
+.steps li::marker{ color:var(--ink); font-variation-settings:'wdth' 100,'wght' 700; }
+.panel h2{ margin:32px 0 10px; font-size:18px; font-variation-settings:'wdth' 90,'wght' 700; }
+.log{ list-style:none; margin:0; padding:0; max-height:230px; overflow:auto; border-top:1px solid var(--line); }
+.log li{ display:grid; grid-template-columns:70px 1fr; gap:8px; padding:8px 0; border-bottom:1px solid var(--line); font-size:13.5px; line-height:1.35; }
+.log time{ color:var(--muted); font-variant-numeric:tabular-nums; }
+.log .sys{ color:var(--muted); }
+.log .act span{ font-variation-settings:'wdth' 100,'wght' 640; }
+
+@media (max-width:780px){
+  .stage{ flex-direction:column; align-items:stretch; gap:0; padding:0; }
+  .device{ width:100%; height:100svh; min-height:640px; padding:0; border-radius:0; background:none; box-shadow:none; }
+  .app{ border-radius:0; }
+  .panel{ max-width:none; padding:32px 22px 56px; }
+  .demo-pill{ display:block; position:fixed; z-index:20; top:calc(env(safe-area-inset-top, 0px) + 8px); left:50%; transform:translateX(-50%);
+    padding:5px 12px; border-radius:999px; border:1px solid rgba(227,236,241,.18); background:rgba(10,24,34,.7);
+    -webkit-backdrop-filter:blur(10px); backdrop-filter:blur(10px); color:var(--c-frost); font-family:inherit; font-size:12px;
+    font-variation-settings:'wdth' 100,'wght' 600; text-decoration:none; transition:opacity .25s; }
+  .demo-pill.off{ opacity:0; pointer-events:none; }
+  .to-app{ display:inline-block; margin-bottom:18px; color:var(--muted); font-size:14px; }
+}
+</style>
+</head>
+<body>
+<main class="stage">
+  <div class="device">
+    <div class="app" id="app" data-state="calm">
+      <header class="bar">
+        <div><span class="site">Hall B</span><span class="aisle">Cold aisle 4, 16 racks</span></div>
+        <div class="feed"><span class="dot" id="dot"></span><span id="clock" aria-label="Last reading">02:13:00</span></div>
+      </header>
+
+      <div class="body" id="body">
+        <section class="field" aria-label="Thermal map of cold aisle 4">
+          <div class="event" id="event" aria-hidden="true"></div>
+          <canvas id="heat" role="img" aria-label="Thermal map. Heat is concentrated at rack B-07."></canvas>
+        </section>
+
+        <section class="queue" id="queue" aria-label="Other racks needing attention"></section>
+
+        <section class="readout">
+          <div class="state">
+            <svg class="glyph" id="glyph" viewBox="0 0 20 20" aria-hidden="true"></svg>
+            <span id="stateWord">Normal</span>
+            <span class="hyst" id="hyst" aria-hidden="true">
+              <span id="hystTxt">Steady</span>
+              <i class="tick"></i><i class="tick"></i><i class="tick"></i>
+            </span>
+          </div>
+          <div class="num" id="num" aria-hidden="true"></div>
+          <div class="meta"><span id="where">Rack B-07 inlet</span><span class="rate" id="rate"></span></div>
+          <svg class="spark" viewBox="0 0 300 44" preserveAspectRatio="none" aria-hidden="true">
+            <line class="lim" id="lim27" x1="0" x2="300"/>
+            <line class="lim" id="lim32" x1="0" x2="300"/>
+            <line class="now" id="nowLn" y1="0" y2="44"/>
+            <path class="pno" id="pNo"/>
+            <path class="pbg" id="pBg"/>
+            <path class="pb" id="pB"/>
+            <path class="ln" id="spark"/>
+            <circle class="hd" id="sparkHead" r="0"/>
+          </svg>
+          <p class="proj" id="proj" hidden></p>
+        </section>
+
+        <section class="action">
+          <div class="slab" id="slab">
+            <p class="calm-msg" id="calmMsg"></p>
+            <p class="why" id="why"></p>
+            <p class="status" id="status"></p>
+            <button class="hold" id="hold" aria-describedby="holdHint"><span class="fill"></span><span class="lbl" id="holdLbl">Hold to boost CRAC-3</span></button>
+            <span class="sr-only" id="holdHint">Press and hold to confirm. With a keyboard or screen reader, activate twice.</span>
+            <div class="row">
+              <button class="ghost" id="override">Override and handle manually</button>
+              <button class="ghost" id="undo"></button>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <div class="shock" id="shockA"></div><div class="shock b" id="shockB"></div>
+      <div class="outcome" id="outcome" role="dialog" aria-labelledby="oTitle" hidden>
+        <div class="o-head"><svg class="glyph" id="oGlyph" viewBox="0 0 20 20" aria-hidden="true"></svg><h2 id="oTitle"></h2></div>
+        <p id="oBody"></p>
+        <dl class="o-stats" id="oStats"></dl>
+        <div class="o-btns"><button class="o-primary" id="oPrimary"></button><button class="ghost" id="oAgain">Run it again</button></div>
+      </div>
+      <div class="intro" id="intro">
+        <span class="i-kicker">Hall B, cold aisle 4, 2:13 AM</span>
+        <h2>A cooling alert, live.</h2>
+        <p>A rack is about to overheat. Watch the alert escalate, then decide: act on it, or let it fail.</p>
+        <button class="i-start" id="iStart">Start the incident</button>
+        <button class="i-look" id="iLook">Look around first</button>
+      </div>
+      <div class="lock" id="lock" hidden>
+        <div class="lock-date">Monday, September 28</div>
+        <div class="lock-time" id="lockTime">2:13</div>
+        <button class="notif" id="notif" hidden>
+          <span class="n-app">Cooling, Hall B</span><span class="n-when">now</span>
+          <strong id="nTitle"></strong><span class="n-body" id="nBody"></span>
+        </button>
+        <p class="lock-hint">Tap the alert to open</p>
+      </div>
+      <div class="sr-only" aria-live="polite" id="liveP"></div>
+      <div class="sr-only" aria-live="assertive" id="liveA"></div>
+    </div>
+  </div>
+
+  <a class="demo-pill" href="#panel">Demo controls</a>
+  <aside class="panel" id="panel">
+    <a class="to-app" href="#app">Back to the app</a>
+    <h1>Cooling alert, critical state</h1>
+    <p>A working prototype, not a mockup. The sensor feed is simulated and time runs ten times fast. The state logic, hysteresis, action log and screen reader announcements are real.</p>
+    <ol class="steps">
+      <li>Run the incident, then tap the alert on the lock screen.</li>
+      <li>Hold the button to cool the rack, and watch the air follow.</li>
+      <li>Or do nothing, and watch it fail.</li>
+      <li>Stay for the second rack.</li>
+    </ol>
+    <div class="ctrl">
+      <label for="heatIn">Heat load in aisle 4 <output id="heatOut">30%</output></label>
+      <input type="range" id="heatIn" min="0" max="100" value="30">
+    </div>
+    <div class="btns">
+      <button class="btn primary" id="run">Run the incident</button>
+      <button class="btn" id="second">Fail a second rack</button>
+      <button class="btn" id="reset">Reset</button>
+    </div>
+    <label class="check"><input type="checkbox" id="fromLock" checked> Start from the lock screen</label>
+    <label class="check" style="margin-top:10px"><input type="checkbox" id="autoSecond" checked> Second rack fails after the first incident ends</label>
+    <h2>Action log</h2>
+    <ol class="log" id="log"></ol>
+  </aside>
+</main>
+
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const app = $('app'), bodyEl = $('body');
+  const SEV = { calm:0, recovering:1, rising:2, critical:3 };
+  const WORD = { calm:'Normal', recovering:'Drifting, recovering', rising:'Drifting, rising', critical:'Critical', offline:'Offline' };
+  const COL = { calm:'#74CFEA', recovering:'#9ED9C4', rising:'#FFB547', critical:'#C96764', offline:'#8FA4B2' };
+  const GLYPH = {
+    calm:'<circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="2"/>',
+    recovering:'<circle cx="10" cy="10" r="7" fill="none" stroke="currentColor" stroke-width="2"/><path d="M6.5 8.5 10 12l3.5-3.5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>',
+    rising:'<path d="M10 2.5 18.5 17.5H1.5Z" fill="currentColor"/><path d="M10 7.5v5" stroke="#0A1822" stroke-width="2" stroke-linecap="round"/><circle cx="10" cy="15" r="1.1" fill="#0A1822"/>',
+    critical:'<path d="M6.3 1.5h7.4l4.8 4.8v7.4l-4.8 4.8H6.3L1.5 13.7V6.3Z" fill="currentColor"/><path d="M5.5 10h9" stroke="#0A1822" stroke-width="2.4" stroke-linecap="round"/>',
+    offline:'<path d="M6 4.8a7 7 0 1 0 8 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10 2v7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
+    resolved:'<circle cx="10" cy="10" r="8.5" fill="currentColor"/><path d="m6 10.2 2.7 2.7L14 7.5" fill="none" stroke="#0F2432" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'
+  };
+  const OPERATOR = 'J. Hargrove';
+  const READ_MS = 1500, SIM_S = 15;
+  const fmt = s => [Math.floor(s/3600)%24, Math.floor(s/60)%60, s%60].map(n => String(n).padStart(2,'0')).join(':');
+  const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
+
+  const S = {};
+  let M = {};                     // modeled racks, keyed by id
+  let holdP = 0, holdBusy = false;
+
+  /* ---------- rack models ---------- */
+  // B-07: hot-aisle recirculation, fixed by boosting CRAC-3.  A-03: rack fan failure, fixed by shifting workloads off it.
+  function makeRack(id){ return { id, T:24.2 + Math.random()*.4, hist:[], slope:0, state:'calm', stable:0, acted:null, actAt:'', fresh:false, flare:0, fault:false, runaway:0, down:false, thr:0, peak:0, critAt:0, prog:0, faultLvl:0 }; }
+  // fixes take effect gradually: prog 0..1 is how far the fix has landed (fan spin-up, workload drain)
+  const RAMP = { 'B-07':0.34, 'A-03':0.12 };
+  function target(m, prog){
+    const p = prog === undefined ? m.prog : prog;
+    if (m.down) return 24;                                    // servers off, no heat
+    const run = m.runaway*(1 - p);                            // unaddressed recirculation feeds on itself
+    if (m.id === 'B-07') return 22 + S.heat*0.14 + run - 10*p;
+    const hot = 23.8 + 13.7*m.faultLvl + run;                // fan degrades over time, not all at once
+    return hot + (25.5 - hot)*p - (S.boosted ? 1.5 : 0);     // servers idle as load drains; aisle boost barely helps
+  }
+  const rate = m => m.id === 'B-07' ? 0.12 : (m.acted === 'fix' ? 0.1 : 0.12);
+  const focused = () => M[S.focus];
+  const others = () => Object.values(M).filter(m => m.id !== S.focus && m.state !== 'calm').sort((a,b) => SEV[b.state] - SEV[a.state] || b.T - a.T);
+  const nextUnhandled = () => Object.values(M).filter(m => m.id !== S.focus && !m.acted && SEV[m.state] >= 2).sort((a,b) => SEV[b.state] - SEV[a.state] || b.T - a.T)[0];
+
+  /* ---------- digits ---------- */
+  const strips = [];
+  (function buildNum(){
+    const el = $('num');
+    const make = () => {
+      const d = document.createElement('span'); d.className = 'dg';
+      const s = document.createElement('span'); s.className = 'strip';
+      for (let i = 0; i < 10; i++){ const x = document.createElement('span'); x.textContent = i; s.appendChild(x); }
+      d.appendChild(s); el.appendChild(d); strips.push(s);
+    };
+    make(); make();
+    const pt = document.createElement('span'); pt.className = 'pt'; pt.textContent = '.'; el.appendChild(pt);
+    make();
+    const u = document.createElement('span'); u.className = 'unit'; u.textContent = '°C'; el.appendChild(u);
+  })();
+  function setNum(v){
+    const s = clamp(v, 10, 99.9).toFixed(1);
+    [s[0], s[1], s[3]].forEach((d,i) => strips[i].style.transform = `translateY(${-Number(d)}em)`);
+  }
+
+  /* ---------- simulation ---------- */
+  function reset(){
+    Object.assign(S, { heat:30, incident:null, boosted:false, focus:'B-07', clock:2*3600+13*60, log:[], n:0, secondAt:null, started:false, ended:null, lastAim:null, startClock:0, startN:0, phase:0, phaseRack:null, phaseN:0, dispatched:{} });
+    $('outcome').hidden = true; delete app.dataset.outcome;
+    M = { 'B-07':makeRack('B-07'), 'A-03':makeRack('A-03') };
+    Object.values(M).forEach(m => { for (let i = 0; i < 24; i++) m.hist.push(m.T + (Math.random()-.5)*.2); });
+    $('heatIn').value = 30; $('heatOut').textContent = '30%';
+    $('lock').hidden = true;
+    queueEls.forEach(e => e.remove()); queueEls.clear();
+    updateAppState(true);
+    fieldReset();
+    render(); renderLog();
+  }
+
+  function reading(){
+    S.n++;
+    if (S.incident != null){
+      S.heat = Math.min(S.incident, S.heat + 15);
+      $('heatIn').value = S.heat; $('heatOut').textContent = S.heat + '%';
+      if (S.heat >= S.incident) S.incident = null;
+    }
+    if (S.secondAt != null && S.n >= S.secondAt){ S.secondAt = null; failSecond(); }
+    S.clock += SIM_S;
+    Object.values(M).forEach(m => {
+      if (m.fault) m.faultLvl = Math.min(1, m.faultLvl + 0.11);
+      if (!m.down){
+        m.prog = m.acted === 'fix' ? Math.min(1, m.prog + RAMP[m.id]) : Math.max(0, m.prog - 0.34);
+        if (m.state === 'critical' && m.acted !== 'fix') m.runaway = Math.min(9, m.runaway + 0.3);
+        else m.runaway = Math.max(0, m.runaway - 0.6);
+      }
+      m.T += (target(m) - m.T)*rate(m) + (Math.random()-.5)*0.1;
+      m.hist.push(m.T); if (m.hist.length > 48) m.hist.shift();
+      const n = m.hist.length; m.slope = (m.hist[n-1] - m.hist[n-4]) / 3;
+      if (m.down) return;
+      m.peak = Math.max(m.peak, m.T);
+      if (m.T >= 35) m.thr++;
+      if (m.T >= 38 && S.ended !== 'ok'){ shutdown(m); return; }
+      evaluate(m);
+    });
+    checkResolved();
+    render();
+    beat();
+    if (reduced){ for (let i = 0; i < 40; i++) step(); drawField(); }
+  }
+
+  function classify(m){
+    if (m.T >= 32) return 'critical';
+    if (m.T >= 27){
+      if (m.slope > 0.015 || m.state === 'calm' || (m.state === 'rising' && m.slope > -0.015)) return 'rising';
+      return 'recovering';
+    }
+    return 'calm';
+  }
+  function evaluate(m){
+    const t = classify(m), a = SEV[t], b = SEV[m.state];
+    if (a > b){ setState(m, t); m.stable = 0; }          // escalate immediately
+    else if (a < b){                                      // hysteresis: 3 steady readings before downgrade
+      m.stable++;
+      if (m.stable >= 3){ setState(m, t); m.stable = 0; }
+    } else m.stable = 0;
+  }
+  function setState(m, t){
+    const up = SEV[t] > SEV[m.state];
+    m.state = t;
+    addLog(`${m.id} changed to ${WORD[t].toLowerCase()}`, 'sys');
+    const temp = m.T.toFixed(1);
+    if (t === 'critical'){
+      m.critAt = S.clock;
+      navigator.vibrate?.([70,50,70]);
+      if ($('lock').hidden) fireShock(m);
+      say(`Critical. Rack ${m.id} inlet ${temp} degrees and rising. ${m.id === 'B-07' ? 'Recommended: boost CRAC-3 fan.' : 'Fan failure. Recommended: cool A-03.'}`, true);
+    } else if (t === 'calm') say(`Rack ${m.id} back to normal.`);
+    else say(`Rack ${m.id} ${WORD[t].toLowerCase()}. Inlet ${temp} degrees.`);
+    notify(m, t);
+
+    // focus rule: never move the target out from under the operator's thumb
+    const f = focused();
+    if (m.id !== S.focus){
+      if (up && SEV[t] >= 2 && (f.state === 'calm' || f.acted || f.down) && !holdBusy) switchFocus(m.id);
+    } else if (t === 'calm'){
+      const nx = others()[0]; if (nx) switchFocus(nx.id);
+    }
+    updateAppState();
+  }
+  function updateAppState(silent){
+    const f = focused(), prev = app.dataset.state, shown = f.down ? 'offline' : f.state;
+    app.dataset.state = shown;
+    app.dataset.multi = others().length ? '1' : '0';
+    if (!silent && reduced && prev !== shown){ bodyEl.classList.remove('xfade'); void bodyEl.offsetWidth; bodyEl.classList.add('xfade'); }
+  }
+  function switchFocus(id){
+    if (S.focus === id) return;
+    S.focus = id;
+    updateAppState();
+    const r = document.querySelector('.readout');
+    r.classList.remove('swap'); void r.offsetWidth; r.classList.add('swap');
+    render(); drawField();
+  }
+
+  /* ---------- render ---------- */
+  function render(){
+    const m = focused(), st = m.state, shown = m.down ? 'offline' : st;
+    app.dataset.multi = others().length ? '1' : '0';
+    $('glyph').innerHTML = GLYPH[shown];
+    $('stateWord').textContent = WORD[shown];
+    $('clock').textContent = fmt(S.clock);
+    $('lockTime').textContent = `${Math.floor(S.clock/3600)%24}:${String(Math.floor(S.clock/60)%60).padStart(2,'0')}`;
+    setNum(m.T);
+    $('where').textContent = `Rack ${m.id} inlet`;
+
+    const perMin = m.slope * (60 / SIM_S);
+    $('rate').textContent = Math.abs(perMin) < 0.05 ? 'Steady' : `${perMin > 0 ? '▲' : '▼'} ${Math.abs(perMin).toFixed(1)}°C/min`;
+
+    const hy = $('hyst');
+    hy.classList.toggle('on', m.stable > 0);
+    hy.querySelectorAll('.tick').forEach((k,i) => k.classList.toggle('f', i < m.stable));
+
+    drawSpark();
+    renderQueue();
+
+    // action slab
+    const calm = st === 'calm', isB = m.id === 'B-07';
+    $('calmMsg').hidden = !calm;
+    $('why').hidden = calm;
+    $('calmMsg').textContent = S.boosted ? 'All 16 racks in range. CRAC-3 boost is still on.' : 'All 16 racks in range. Nothing needs your attention.';
+    let eta = 'Holding above the limit.';
+    if (m.T >= 35) eta = perMin > 0.1 ? `Servers are throttling now. Shutdown at 38°C in about ${Math.max(1, Math.round((38 - m.T)/perMin))} min.` : 'Servers are throttling now.';
+    else if (perMin > 0.1) eta = `Servers throttle at 35°C in about ${Math.max(1, Math.round((35 - m.T)/perMin))} min.`;
+    if (st === 'recovering') $('why').textContent = 'Falling back toward the recommended range.';
+    else if (isB){
+      if (st === 'rising') $('why').textContent = 'Inlet passed the 27°C recommended limit and is climbing. Recommended: raise CRAC-3 fan to 100%.';
+      if (st === 'critical') $('why').textContent = `Above the 32°C allowable limit. ${eta}`;
+    } else {
+      if (st === 'rising') $('why').textContent = 'Rack fan failure. Recommended: aim CRAC-3 at A-03 and shift its workloads off.';
+      if (st === 'critical') $('why').textContent = `Rack fan failure, above the 32°C limit. ${eta}`;
+    }
+    const offerAction = !calm && !m.acted && st !== 'recovering' && !m.down;
+    if (m.down) $('why').textContent = `Rack ${m.id} shut down at 38°C to protect hardware.`;
+    $('hold').hidden = !offerAction;
+    $('override').hidden = !offerAction;
+    if (!holdBusy) $('holdLbl').textContent = holdBase();
+    const st2 = $('status');
+    if (m.acted === 'manual'){ st2.hidden = false; st2.textContent = `Manual control of ${m.id} by ${OPERATOR} since ${m.actAt}. Logged.`; }
+    else if (m.acted === 'fix'){
+      st2.hidden = calm;
+      const pct = Math.round(m.prog*100);
+      st2.textContent = isB
+        ? (m.prog < 1 ? `CRAC-3 spinning up, ${pct}%. Logged at ${m.actAt}.` : `CRAC-3 at 100% since ${m.actAt}. Inlet should start falling within a minute. Logged.`)
+        : (m.prog < 1 ? `CRAC-3 boosting A-03, workloads ${pct}% moved. Logged at ${m.actAt}.` : `CRAC-3 on A-03, workloads moved. Inlet falling. Logged at ${m.actAt}.`);
+    } else st2.hidden = true;
+    st2.classList.toggle('done', m.acted === 'fix');
+    if (m.fresh){ st2.classList.remove('fresh'); void st2.offsetWidth; st2.classList.add('fresh'); m.fresh = false; }
+    const undo = $('undo');
+    undo.hidden = !m.acted;
+    undo.textContent = m.acted === 'manual' ? 'Resume recommendations' : (isB ? 'Revert boost' : 'Revert cooling');
+  }
+  const holdBase = () => focused().id === 'B-07' ? 'Hold to boost CRAC-3' : 'Hold to cool A-03';
+
+  /* ---------- queue of other racks ---------- */
+  const queueEls = new Map();
+  function renderQueue(){
+    const q = $('queue'), list = others(), f = focused();
+    const ids = new Set(list.map(m => m.id));
+    queueEls.forEach((el, id) => { if (!ids.has(id)){ el.remove(); queueEls.delete(id); } });
+    list.forEach(m => {
+      let el = queueEls.get(m.id);
+      if (!el){
+        el = document.createElement('button'); el.className = 'q';
+        el.innerHTML = '<svg class="glyph" viewBox="0 0 20 20" aria-hidden="true"></svg><span class="qm"><span class="qh"><span class="qid"></span><span class="qw"></span><span class="qu">More urgent</span></span><span class="qc"></span></span><span class="qt"></span>';
+        el.addEventListener('click', () => switchFocus(m.id));
+        queueEls.set(m.id, el);
+      }
+      if (el.parentNode !== q) q.appendChild(el);
+      const urgent = SEV[m.state] > SEV[f.state] || (SEV[m.state] === SEV[f.state] && !m.acted && f.acted);
+      el.style.setProperty('--qc', COL[m.down ? 'offline' : m.state]);
+      el.querySelector('.glyph').innerHTML = GLYPH[m.down ? 'offline' : m.state];
+      el.querySelector('.qid').textContent = m.id;
+      el.querySelector('.qw').textContent = WORD[m.down ? 'offline' : m.state];
+      el.querySelector('.qu').hidden = !urgent;
+      el.querySelector('.qc').textContent = m.down ? 'Offline, shut down at 38°C' : m.acted ? (m.acted === 'manual' ? 'Manual control, logged' : (m.id === 'B-07' ? 'CRAC-3 boosted, logged' : m.prog < 1 ? `Cooling, ${Math.round(m.prog*100)}% load moved` : 'Cooled, logged'))
+                                                    : (m.id === 'B-07' ? 'Hot air recirculating, needs action' : 'Rack fan failure, needs action');
+      const pm = m.slope*(60/SIM_S);
+      el.querySelector('.qt').textContent = `${m.T.toFixed(1)}° ${pm > 0.05 ? '▲' : pm < -0.05 ? '▼' : ''}`;
+      el.classList.toggle('urgent', urgent);
+      el.setAttribute('aria-label', `Switch to rack ${m.id}, ${WORD[m.state]}, ${m.T.toFixed(1)} degrees${urgent ? ', more urgent' : ''}`);
+    });
+  }
+
+  function drawSpark(){
+    const m = focused(), st = m.state, h = m.hist, W = 300, H = 44, lo = 22, hi = 37;
+    const proj = st !== 'calm' && st !== 'recovering' && !m.acted && !m.down;
+    const HX = proj ? 205 : W, STEPS = 12;
+    const y = t => H - clamp((t - lo)/(hi - lo), 0, 1)*H;
+    const dx = HX / 47, x0 = HX - (h.length - 1)*dx;
+    const d = pts => pts.map((q,i) => `${i ? 'L' : 'M'}${q[0].toFixed(1)} ${y(q[1]).toFixed(1)}`).join('');
+    $('spark').setAttribute('d', d(h.map((t,i) => [x0 + i*dx, t])));
+    ['27','32'].forEach(k => { const l = $('lim'+k); l.setAttribute('y1', y(+k)); l.setAttribute('y2', y(+k)); });
+    const hd = $('sparkHead'); hd.setAttribute('cx', HX); hd.setAttribute('cy', y(h[h.length-1])); hd.setAttribute('r', 3);
+    const nl = $('nowLn'); nl.setAttribute('x1', HX); nl.setAttribute('x2', HX); nl.style.display = proj ? '' : 'none';
+    ['pNo','pBg','pB'].forEach(k => $(k).style.display = proj ? '' : 'none');
+    $('proj').hidden = !proj;
+    if (!proj) return;
+    const future = fix => {
+      let t = m.T, p = 0; const out = [[HX, t]];
+      for (let k = 1; k <= STEPS; k++){
+        if (fix) p = Math.min(1, p + RAMP[m.id]);
+        t += (target(m, p) - t)*(fix && m.id === 'A-03' ? 0.1 : rate(m));
+        out.push([HX + k*(W - HX)/STEPS, t]);
+      }
+      return out;
+    };
+    const no = future(false), bo = future(true);
+    $('pNo').setAttribute('d', d(no));
+    $('pBg').setAttribute('d', d(bo));
+    const shown = bo.slice(0, 1 + Math.round(holdP*STEPS));
+    $('pB').setAttribute('d', shown.length > 1 ? d(shown) : '');
+    const verb = m.id === 'B-07' ? 'with boost' : 'if cooled';
+    $('proj').innerHTML = `In 3 min: <span class="a">${no[STEPS][1].toFixed(1)}°C if nothing changes</span>, <span class="b">${bo[STEPS][1].toFixed(1)}°C ${verb}</span>`;
+  }
+  function fireShock(m){
+    if (reduced) return;
+    const f = document.querySelector('.field').getBoundingClientRect(), a = app.getBoundingClientRect();
+    const h = racks[rackIndex[m.id]], x = f.left - a.left + (h.x + h.w/2)*f.width/GW, yy = f.top - a.top + (h.y + h.h/2)*f.height/GH;
+    ['shockA','shockB'].forEach(id => { const e = $(id); e.style.left = x + 'px'; e.style.top = yy + 'px'; e.classList.remove('go'); void e.offsetWidth; e.classList.add('go'); });
+  }
+  function notify(m, t){
+    const lock = $('lock'), n = $('notif');
+    if (lock.hidden || t === 'calm' || t === 'recovering') return;
+    const temp = m.T.toFixed(1);
+    if (t === 'critical'){
+      $('nTitle').textContent = `Critical: rack ${m.id} above 32°C`;
+      $('nBody').textContent = m.id === 'B-07' ? `Inlet ${temp}°C and rising. Boost CRAC-3 now.` : `Fan failure, inlet ${temp}°C. Cool ${m.id} now.`;
+    } else { $('nTitle').textContent = `Rack ${m.id} inlet drifting`; $('nBody').textContent = `Inlet ${temp}°C and rising in cold aisle 4.`; }
+    n.classList.toggle('crit', t === 'critical');
+    n.hidden = false; n.classList.remove('in'); void n.offsetWidth;
+    requestAnimationFrame(() => n.classList.add('in'));
+  }
+  /* ---------- outcomes ---------- */
+  const dur = s => { const mnt = Math.floor(s/60), sec = s % 60; return mnt ? `${mnt}m ${String(sec).padStart(2,'0')}s` : `${sec}s`; };
+  const actions = () => S.log.filter(e => e.kind === 'act').length;
+  const throttled = () => Object.values(M).reduce((a,m) => a + m.thr, 0)*SIM_S;
+  function shutdown(m){
+    m.down = true; m.flare = 0; m.downAt = fmt(S.clock); S.ended = 'fail';
+    navigator.vibrate?.([200,80,200]);
+    addLog(`${m.id} shut down at 38°C to protect hardware`, 'sys');
+    say(`Rack ${m.id} has shut down. Servers powered off to protect hardware.`, true);
+    if (S.focus !== m.id){ S.focus = m.id; document.querySelector('.readout').classList.add('swap'); }
+    updateAppState();
+    if (!$('lock').hidden){
+      const n = $('notif');
+      $('nTitle').textContent = `Rack ${m.id} shut down`; $('nBody').textContent = 'Inlet hit 38°C. Servers powered off to protect hardware.';
+      n.classList.add('crit'); n.hidden = false; n.classList.remove('in'); void n.offsetWidth; requestAnimationFrame(() => n.classList.add('in'));
+    }
+    showOutcome('fail', m);
+  }
+  function checkResolved(){
+    if (!S.started || S.ended || S.n < S.phaseN + 3) return;
+    const ms = Object.values(M), live = ms.filter(m => !m.down);
+    if (!live.every(m => m.state === 'calm')) return;
+    const pr = M[S.phaseRack];
+    if (!pr || pr.down || pr.peak < 27) return;
+    const downs = ms.filter(m => m.down);
+    S.ended = downs.length ? 'mixed' : 'ok';
+    addLog(downs.length ? `${pr.id} recovered; ${downs.map(d => d.id).join(', ')} still offline` : 'Incident resolved: all racks back in range', 'sys');
+    say(downs.length ? `Rack ${pr.id} recovered. ${downs.map(d => d.id).join(' and ')} still offline.` : 'Incident resolved. All racks back in range.');
+    showOutcome(S.ended, pr);
+  }
+  function standDown(){
+    if (!S.boosted || !S.ended || S.ended === 'fail') return;
+    S.boosted = false; S.heat = 30; S.incident = null;
+    $('heatIn').value = 30; $('heatOut').textContent = '30%';
+    const b = M['B-07']; if (b.acted === 'fix') b.acted = null;
+    addLog('CRAC-3 returned to 60% after resolution', 'sys');
+    showEvent('CRAC-3 back to 60%', true);
+    render(); drawField();
+  }
+  function showOutcome(kind, m){
+    const o = $('outcome'), ms = Object.values(M);
+    const peakRack = ms.reduce((a,b) => b.peak > a.peak ? b : a);
+    const downs = ms.filter(r => r.down);
+    const stats = kind === 'ok'
+      ? [['Duration', dur(S.clock - S.startClock)], ['Peak inlet', `${peakRack.peak.toFixed(1)}°`], ['Actions', String(actions())]]
+      : kind === 'mixed'
+      ? [['Duration', dur(S.clock - S.startClock)], ['Racks offline', String(downs.length)], ['Actions', String(actions())]]
+      : [['To shutdown', dur(S.clock - m.critAt)], ['Throttled', dur(throttled())], ['Actions', String(actions())]];
+    o.classList.remove('leaving');
+    o.classList.toggle('fail', kind === 'fail'); o.classList.toggle('mixed', kind === 'mixed');
+    $('oGlyph').innerHTML = kind === 'fail' ? GLYPH.offline : GLYPH.resolved;
+    $('oTitle').textContent = kind === 'ok' ? 'Incident resolved' : kind === 'mixed' ? `${m.id} recovered` : downs.length > 1 ? `${downs.length} racks shut down` : `Rack ${m.id} shut down`;
+    $('oBody').textContent = kind === 'ok'
+      ? `All 16 racks back in range at ${fmt(S.clock)}. ${throttled() ? `Servers throttled for ${dur(throttled())}.` : 'No servers throttled.'} Every action is in the log.`
+      : kind === 'mixed'
+      ? `${m.id} is back in range at ${fmt(S.clock)}. ${downs.map(d => `${d.id} is still offline after shutting down at ${d.downAt}`).join('. ')}. It needs hands on site.`
+      : downs.length > 1
+        ? `${downs.map(r => r.id).join(' and ')} hit 38°C and powered off to protect their hardware, taking ${40*downs.length} servers offline. Workloads are failing over to other racks.`
+        : `Inlet hit 38°C at ${m.downAt}. The rack powered off to protect its hardware, taking 40 servers offline. Workloads are failing over to other racks.`;
+    $('oStats').innerHTML = stats.map(([k,v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join('');
+    const pb = $('oPrimary'), sent = kind !== 'ok' && downs.every(d => S.dispatched[d.id]);
+    pb.disabled = sent;
+    pb.textContent = kind === 'ok' ? 'Done' : sent ? 'Tech dispatched, logged' : 'Dispatch on-site tech';
+    app.dataset.outcome = kind;
+    o.hidden = false;
+    // aftershock: once the first incident is over, the second rack goes
+    if (S.phase === 1 && S.autoSecond && !M['A-03'].fault) S.secondAt = S.n + 14;   // ~20 s to read the outcome first
+    // once it's all over, CRAC-3 stands down and the aisle returns to normal
+    if ((kind === 'ok' || kind === 'mixed') && S.boosted) setTimeout(standDown, 2500);
+    if ($('lock').hidden) setTimeout(() => pb.focus({ preventScroll:true }), 300);
+  }
+  $('oPrimary').addEventListener('click', e => {
+    if (S.ended === 'ok'){ $('outcome').hidden = true; return; }
+    const downs = Object.values(M).filter(m => m.down && !S.dispatched[m.id]);
+    downs.forEach(m => S.dispatched[m.id] = true);
+    addLog(`On-site tech dispatched to ${downs.map(m => m.id).join(' and ')} by ${OPERATOR}`, 'act');
+    say('Tech dispatched. Logged.');
+    e.currentTarget.textContent = 'Tech dispatched, logged'; e.currentTarget.disabled = true;
+  });
+  $('oAgain').addEventListener('click', () => { reset(); armRun(); $('second').disabled = false; runBtn.click(); });
+
+  function showLock(){
+    const lock = $('lock'), n = $('notif');
+    lock.hidden = false; lock.classList.remove('opening'); n.hidden = true; n.classList.remove('in');
+  }
+  function openLock(){
+    const lock = $('lock');
+    lock.classList.add('opening');
+    setTimeout(() => {
+      lock.hidden = true; lock.classList.remove('opening');
+      const f = focused(); if (f.state === 'critical') fireShock(f);
+      $('hold').hidden || $('hold').focus({ preventScroll:true });
+    }, reduced ? 0 : 480);
+  }
+  $('notif').addEventListener('click', openLock);
+  function beat(){ const d = $('dot'); d.classList.remove('beat'); void d.offsetWidth; if (!reduced) d.classList.add('beat'); }
+  function say(msg, urgent){ const el = urgent ? $('liveA') : $('liveP'); el.textContent = ''; setTimeout(() => el.textContent = msg, 60); }
+
+  function addLog(text, kind){ S.log.unshift({ t:fmt(S.clock), text, kind }); renderLog(); }
+  function renderLog(){
+    const ol = $('log');
+    ol.innerHTML = S.log.length ? '' : '<li><span></span><span class="sys">Nothing logged yet.</span></li>';
+    S.log.forEach(e => {
+      const li = document.createElement('li'); li.className = e.kind;
+      li.innerHTML = `<time>${e.t}</time><span></span>`; li.lastChild.textContent = e.text; ol.appendChild(li);
+    });
+  }
+
+  /* ---------- actions ---------- */
+  function moveOnAfterAction(fromId){
+    setTimeout(() => { const nx = nextUnhandled(); if (nx && S.focus === fromId && !holdBusy) switchFocus(nx.id); }, 1600);
+  }
+  function act(){
+    const m = focused(), fromKey = document.activeElement === $('hold');
+    m.acted = 'fix'; m.actAt = fmt(S.clock); m.fresh = true;
+    navigator.vibrate?.(30);
+    if (m.id === 'B-07'){
+      S.boosted = true;
+      addLog(`CRAC-3 fan boosted to 100% by ${OPERATOR}`, 'act');
+      showEvent('CRAC-3 boosting to 100%', true);
+      say('Boost applied. CRAC-3 at 100 percent. Logged.');
+    } else {
+      S.boosted = true;
+      addLog(`CRAC-3 boosted toward A-03 and workloads shifting off, by ${OPERATOR}`, 'act');
+      showEvent('Cooling A-03: CRAC-3 boost and load shift', true);
+      say('CRAC-3 boosting toward A-03, workloads shifting off. Logged.');
+    }
+    render(); drawField();
+    if (fromKey) $('undo').focus();
+    moveOnAfterAction(m.id);
+  }
+  (function bindHold(btn, onConfirm){
+    const HOLD = 750; let t0 = 0, raf = 0, armed = false, armT = 0;
+    const lbl = $('holdLbl');
+    let p = 0, hintT = 0;
+    const cancel = () => {
+      cancelAnimationFrame(raf); btn.style.setProperty('--p', 0); holdP = 0; holdBusy = false; drawSpark();
+      if (p > 0 && p < 1){ lbl.textContent = 'Hold for one second to confirm'; clearTimeout(hintT); hintT = setTimeout(() => lbl.textContent = holdBase(), 2000); }
+      else lbl.textContent = holdBase();
+      p = 0;
+    };
+    const tick = () => {
+      p = Math.min(1, (performance.now() - t0)/HOLD);
+      btn.style.setProperty('--p', p); holdP = p; drawSpark();
+      if (p >= 1){ cancel(); onConfirm(); return; }
+      raf = requestAnimationFrame(tick);
+    };
+    btn.addEventListener('pointerdown', e => { btn.setPointerCapture(e.pointerId); clearTimeout(hintT); holdBusy = true; lbl.textContent = 'Keep holding'; t0 = performance.now(); tick(); });
+    btn.addEventListener('pointerup', cancel);
+    btn.addEventListener('pointercancel', cancel);
+    btn.addEventListener('contextmenu', e => e.preventDefault());
+    btn.addEventListener('click', e => {           // keyboard and assistive tech: activate twice
+      if (e.detail !== 0) return;
+      if (armed){ clearTimeout(armT); armed = false; holdBusy = false; lbl.textContent = holdBase(); onConfirm(); }
+      else { armed = true; holdBusy = true; lbl.textContent = 'Press again to confirm'; armT = setTimeout(() => { armed = false; holdBusy = false; lbl.textContent = holdBase(); }, 3000); }
+    });
+  })($('hold'), act);
+
+  $('override').addEventListener('click', () => {
+    const m = focused();
+    m.acted = 'manual'; m.actAt = fmt(S.clock);
+    addLog(`Override: ${OPERATOR} took manual control of ${m.id}`, 'act');
+    say(`Override logged. Manual control of ${m.id}.`);
+    render(); $('undo').focus();
+    moveOnAfterAction(m.id);
+  });
+  $('undo').addEventListener('click', () => {
+    const m = focused();
+    if (m.acted === 'manual') addLog(`${OPERATOR} resumed recommendations for ${m.id}`, 'act');
+    else if (m.id === 'B-07'){ S.boosted = false; addLog(`CRAC-3 boost reverted by ${OPERATOR}`, 'act'); }
+    else { S.boosted = M['B-07'].acted === 'fix'; addLog(`A-03 cooling reverted by ${OPERATOR}`, 'act'); }
+    m.acted = null;
+    render(); drawField();
+  });
+
+  /* ---------- panel controls ---------- */
+  $('heatIn').addEventListener('input', e => { armRun(); S.heat = +e.target.value; S.incident = null; $('heatOut').textContent = S.heat + '%'; });
+  let timer = 0;
+  const startFeed = () => { clearInterval(timer); timer = setInterval(reading, READ_MS); };
+  function showEvent(text, cool){
+    const el = $('event'); el.textContent = text; el.classList.toggle('cool', !!cool);
+    el.classList.remove('on'); void el.offsetWidth; el.classList.add('on');
+    clearTimeout(showEvent.t); showEvent.t = setTimeout(() => el.classList.remove('on'), 3800);
+  }
+  function failSecond(){
+    const a = M['A-03'];
+    if (a.fault) return;
+    a.fault = true; a.flare = 1;
+    if (!S.started){ S.started = true; S.startClock = S.clock; S.startN = S.n; S.phase = 2; S.phaseRack = 'A-03'; S.phaseN = S.n; }
+    else if (S.ended){                       // the first incident is over; this one reopens the screen
+      S.phase = 2; S.phaseRack = 'A-03'; S.phaseN = S.n; S.ended = null;
+      const o = $('outcome');
+      if (!o.hidden){ o.classList.add('leaving'); setTimeout(() => { o.hidden = true; o.classList.remove('leaving'); }, reduced ? 0 : 600); }
+      delete app.dataset.outcome;
+      if (!$('lock').hidden) notify(a, 'rising');
+    }
+    addLog('Simulated: fan failure on rack A-03', 'sys');
+    showEvent(S.phase === 2 && S.startN !== S.phaseN ? 'New alert: fan failure on rack A-03' : 'Fan failure on rack A-03');
+    say('Fan failure on rack A-03.');
+    $('second').disabled = true;
+  }
+  const runBtn = $('run');
+  const armRun = () => { runBtn.disabled = false; runBtn.textContent = 'Run the incident'; };
+  runBtn.addEventListener('click', () => {
+    if (!$('intro').hidden) closeIntro();
+    S.incident = 88; M['B-07'].flare = 1; S.autoSecond = $('autoSecond').checked;
+    S.started = true; S.startClock = S.clock; S.startN = S.n; S.phase = 1; S.phaseRack = 'B-07'; S.phaseN = S.n;
+    runBtn.disabled = true; runBtn.textContent = 'Incident running';
+    if ($('fromLock').checked && focused().state === 'calm') showLock();
+    addLog('Simulated incident started: heat load spiking at B-07', 'sys');
+    showEvent('Heat load spiking at rack B-07');
+    say('Heat load spiking at rack B-07.');
+    reading(); startFeed();
+  });
+  // the pill only floats while the app is on screen
+  new IntersectionObserver(([e]) => document.querySelector('.demo-pill').classList.toggle('off', e.intersectionRatio < 0.5), { threshold:[0, 0.5, 1] }).observe(app);
+  function closeIntro(){ const i = $('intro'); i.classList.add('gone'); setTimeout(() => i.hidden = true, reduced ? 0 : 460); }
+  $('iStart').addEventListener('click', () => { closeIntro(); runBtn.click(); });
+  $('iLook').addEventListener('click', closeIntro);
+  $('second').addEventListener('click', () => { if (!$('intro').hidden) closeIntro(); failSecond(); M['A-03'].faultLvl = 0.2; reading(); startFeed(); });   // respond on the click, not the next tick
+  $('reset').addEventListener('click', () => { reset(); armRun(); $('second').disabled = false; });
+  const mq = matchMedia('(prefers-reduced-motion: reduce)');
+  let reduced = mq.matches;
+  const applyMotion = () => { app.dataset.motion = reduced ? 'reduced' : 'full'; drawField(); };
+  mq.addEventListener?.('change', e => { reduced = e.matches; applyMotion(); });
+
+  /* ---------- thermal field ---------- */
+  const GW = 28, GH = 48, N = GW*GH;
+  let U = new Float32Array(N), V = new Float32Array(N);
+  const rackOf = new Int8Array(N).fill(-1);
+  const racks = [];
+  for (let side = 0; side < 2; side++) for (let i = 0; i < 8; i++){
+    racks.push({ side, row:i, x: side ? 21 : 1, w:6, y:1.5 + i*5.1, h:4.4, id:(side ? 'B' : 'A') + '-0' + (i+1), jit:Math.random()*.8 });
+  }
+  const rackIndex = {}; racks.forEach((r,k) => rackIndex[r.id] = k);
+  const HOT = rackIndex['B-07'];
+  const CRAC = { x:8, w:12, y:43.6, h:3.4 };
+  const cracCell = new Uint8Array(N);
+  for (let y = Math.floor(CRAC.y); y < GH; y++) for (let x = CRAC.x; x < CRAC.x + CRAC.w; x++) cracCell[y*GW + x] = 1;
+  racks.forEach((r,k) => {
+    for (let y = Math.floor(r.y); y < Math.ceil(r.y + r.h); y++) for (let x = r.x; x < r.x + r.w; x++) rackOf[y*GW + x] = k;
+  });
+  const norm = t => clamp((t - 18)/20, 0, 1);
+  function rackTemp(k){
+    const r = racks[k];
+    if (M[r.id]){ const m = M[r.id]; if (m.down) return 22; return m.id === 'A-03' ? 22 + (m.T - 22)*0.62 : m.T; }
+    let t = 22.5 + r.jit;
+    Object.values(M).forEach(m => {
+      const h = racks[rackIndex[m.id]];
+      const d = Math.abs(r.row - h.row) + (r.side !== h.side ? 2 : 0);
+      t = Math.max(t, 22.5 + (m.T - 22.5)*(0.5/(1 + d*0.9)) + r.jit);
+    });
+    return t;
+  }
+  function fieldReset(){ U.fill(norm(19)); for (let i = 0; i < 400; i++) step(); drawField(); }
+  function step(){
+    const maxT = Math.max(...Object.values(M).map(m => m.down ? 22 : m.T));
+    const D = 0.23, sup = norm((S.boosted ? 16.5 : 18.5) + Math.max(0, maxT - 26)*0.9);
+    const rt = racks.map((r,k) => norm(rackTemp(k)));
+    const cr = norm(S.boosted ? 10 : 17.5);
+    for (let y = 0; y < GH; y++) for (let x = 0; x < GW; x++){
+      const i = y*GW + x;
+      if (rackOf[i] >= 0){ V[i] = rt[rackOf[i]]; continue; }
+      if (cracCell[i]){ V[i] = cr; continue; }
+      const u = U[i];
+      const l = x > 0 ? U[i-1] : u, r = x < GW-1 ? U[i+1] : u, t = y > 0 ? U[i-GW] : u, b = y < GH-1 ? U[i+GW] : u;
+      let v = u + D*(l + r + t + b - 4*u);
+      V[i] = v + (sup - v)*0.0035;
+    }
+    // plume off each modeled rack: strength tracks temperature, spread rate tracks the trend
+    Object.values(M).forEach(m => {
+      m.flare = (m.flare || 0)*0.996;
+      if (m.down) return;
+      const gain = m.id === 'A-03' ? 0.5 : 1;   // the fan-failure rack reads quieter than the main incident
+      const src = gain*(clamp((m.T - 25.5)/8, 0, 1)*0.085 + m.flare*0.08)*(1 + Math.max(0, m.slope)*5);
+      if (src < 0.002) return;
+      const h = racks[rackIndex[m.id]], dir = h.side ? -1 : 1, fx = h.side ? h.x - 1 : h.x + h.w;
+      const cap = m.id === 'A-03' ? norm(22 + (m.T - 22)*0.8) : norm(m.T + 2.5);   // plume never runs hotter than its source
+      for (let y = Math.floor(h.y); y < Math.ceil(h.y + h.h); y++){
+        for (let c = 0; c < 3; c++){ const i = y*GW + fx + dir*c; V[i] = Math.max(V[i], Math.min(cap, V[i] + src*(1 - c*0.3)*(0.7 + Math.random()*0.6))); }
+      }
+    });
+    const s = U; U = V; V = s;
+  }
+
+  const stops = [[0,'#132C3E'],[.3,'#1C4A62'],[.5,'#3A5566'],[.64,'#6B2E2A'],[.78,'#C94A26'],[.9,'#E88A45'],[1,'#F6DDC0']];
+  const hex = h => [1,3,5].map(i => parseInt(h.slice(i,i+2),16));
+  const LUT = new Uint8ClampedArray(256*3);
+  for (let i = 0; i < 256; i++){
+    const t = i/255; let k = 0; while (k < stops.length-2 && t > stops[k+1][0]) k++;
+    const [a,ca] = stops[k], [b,cb] = stops[k+1], f = (t - a)/(b - a);
+    const A = hex(ca), B = hex(cb);
+    for (let c = 0; c < 3; c++) LUT[i*3+c] = A[c] + (B[c] - A[c])*f;
+  }
+
+  const cv = $('heat'), ctx = cv.getContext('2d');
+  const off = document.createElement('canvas'); off.width = GW; off.height = GH;
+  const octx = off.getContext('2d'), img = octx.createImageData(GW, GH);
+  let cw = 0, ch = 0;
+  new ResizeObserver(() => {
+    const r = cv.getBoundingClientRect(), dpr = Math.min(2, devicePixelRatio || 1);
+    cw = r.width; ch = r.height; cv.width = Math.max(1, cw*dpr); cv.height = Math.max(1, ch*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0); drawField();
+  }).observe(cv);
+
+  const rr = (x, y, w, h, r) => { ctx.beginPath(); ctx.roundRect ? ctx.roundRect(x, y, w, h, r) : ctx.rect(x, y, w, h); };
+  function drawField(){
+    if (!cw || !ch || !M['B-07']) return;
+    for (let i = 0; i < N; i++){
+      const j = clamp((U[i]*255)|0, 0, 255)*3;
+      img.data[i*4] = LUT[j]; img.data[i*4+1] = LUT[j+1]; img.data[i*4+2] = LUT[j+2]; img.data[i*4+3] = 255;
+    }
+    octx.putImageData(img, 0, 0);
+    ctx.imageSmoothingEnabled = true; ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(off, 0, 0, cw, ch);
+
+    const sx = cw/GW, sy = ch/GH, fs = clamp(sy*2, 9, 11.5);
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    racks.forEach(r => {
+      const m = M[r.id], alert = m && m.state !== 'calm' && !m.down, foc = alert && r.id === S.focus;
+      const x = r.x*sx + 1.5, y = r.y*sy, w = r.w*sx - 3, h = r.h*sy;
+      rr(x, y, w, h, Math.min(5, h/3));
+      if (m && m.down){
+        ctx.fillStyle = 'rgba(2,5,8,.97)'; ctx.fill();
+        ctx.setLineDash([3,3]); ctx.lineWidth = 1.2; ctx.strokeStyle = '#8FA4B2'; ctx.stroke(); ctx.setLineDash([]);
+        if (h > 13){ ctx.font = `650 ${fs}px Archivo, sans-serif`; ctx.fillStyle = '#8FA4B2'; ctx.fillText(`${r.id} off`, x + w/2, y + h/2 + .5); }
+        return;
+      }
+      ctx.fillStyle = 'rgba(30,52,68,.92)'; ctx.fill();
+      if (foc){ ctx.save(); ctx.shadowColor = COL[m.state]; ctx.shadowBlur = 14; }
+      ctx.lineWidth = foc ? 2.2 : alert ? 1.4 : 1; ctx.strokeStyle = alert ? COL[m.state] : 'rgba(227,236,241,.3)'; ctx.stroke();
+      if (foc) ctx.restore();
+      if (h > 13){
+        ctx.font = `${alert ? 650 : 500} ${fs}px Archivo, sans-serif`;
+        ctx.fillStyle = alert ? COL[m.state] : 'rgba(227,236,241,.72)'; ctx.fillText(r.id, x + w/2, y + h/2 + .5);
+      }
+    });
+    drawStreams(sx, sy);
+    // live chips on the aisle side of each alerting rack
+    Object.values(M).forEach(m => {
+      if (m.id !== 'B-07' && m.state === 'calm') return;
+      const h = racks[rackIndex[m.id]], cy = (h.y + h.h/2)*sy - (S.boosted && m.id === aimRack() ? h.h*sy*0.8 : 0);   // clear the airflow's path
+      const label = m.down ? 'Offline' : m.T >= 35 ? `${m.T.toFixed(1)}° throttling` : m.T.toFixed(1) + '°';
+      ctx.font = `650 12px Archivo, sans-serif`;
+      const tw = ctx.measureText(label).width + 14, cx = h.side ? h.x*sx - 8 - tw : (h.x + h.w)*sx + 8;
+      rr(cx, cy - 11, tw, 22, 11);
+      ctx.fillStyle = 'rgba(10,24,34,.9)'; ctx.fill();
+      ctx.strokeStyle = m.down ? '#8FA4B2' : m.state === 'calm' ? 'rgba(227,236,241,.2)' : COL[m.state]; ctx.lineWidth = 1; ctx.stroke();
+      ctx.fillStyle = '#E3ECF1'; ctx.fillText(label, cx + tw/2, cy + .5);
+    });
+    // CRAC-3 at the aisle end
+    const cx0 = CRAC.x*sx, cy0 = CRAC.y*sy, cwid = CRAC.w*sx, chgt = Math.max(16, CRAC.h*sy - 4);
+    rr(cx0, cy0, cwid, chgt, 7);
+    ctx.fillStyle = 'rgba(30,52,68,.94)'; ctx.fill();
+    ctx.lineWidth = S.boosted ? 1.6 : 1; ctx.strokeStyle = S.boosted ? '#74CFEA' : 'rgba(227,236,241,.34)'; ctx.stroke();
+    ctx.font = `${S.boosted ? 650 : 500} 11px Archivo, sans-serif`;
+    ctx.fillStyle = S.boosted ? '#74CFEA' : 'rgba(227,236,241,.8)';
+    ctx.fillText(S.boosted ? 'CRAC-3 at 100%' : 'CRAC-3 at 60%', cx0 + cwid/2, cy0 + chgt/2 + .5);
+  }
+
+  /* ---------- airflow streamlines from CRAC-3 ---------- */
+  const AISLE_L = 7.3, AISLE_R = 20.7, AISLE_C = 14;
+  // streamlines are traced once through the flow field; moving dashes carry the air along them
+  function flow(p, boost, aim){
+    const dir = p.x < AISLE_C ? -1 : 1;
+    let vx = dir*p.k - (p.x - AISLE_C)*0.004 + Math.sin(p.y*0.28 + p.ph)*0.02;   // a focused jet up the aisle
+    let vy = -0.3;
+    if (boost && p.w){
+      // boosted air is aimed at B-07: these lines steer into its intake
+      const h = racks[rackIndex[aim]], ty = h.y + h.h/2 + p.ty, tx = h.side ? AISLE_R + 0.6 : AISLE_L - 0.6;
+      const dx = tx - p.x, dy = ty - p.y, d = Math.hypot(dx, dy) || 1;
+      const steer = p.w*clamp(1.2 - d/14, 0.35, 1);
+      vx = vx*(1 - steer) + (dx/d)*0.3*steer;
+      vy = vy*(1 - steer) + (dy/d)*0.3*steer;
+    }
+    return [vx, vy];
+  }
+  const lineCache = {};
+  // boosted air goes to whichever live rack is hottest and alerting (B-07 by default)
+  function aimRack(){
+    // stay on the rack the operator is cooling, even after it settles, until CRAC-3 stands down
+    const acted = Object.values(M).filter(m => m.acted === 'fix' && !m.down);
+    const t = acted.filter(m => m.state !== 'calm').sort((a,b) => b.T - a.T)[0] || acted.find(m => m.id === S.lastAim) || acted[0];
+    if (t) S.lastAim = t.id;
+    return S.lastAim || 'B-07';
+  }
+  function streamlines(boost, aim){
+    const key = boost + aim;
+    if (lineCache[key]) return lineCache[key];
+    const n = boost ? 16 : 8, out = [];
+    for (let i = 0; i < n; i++){
+      const u = i/(n - 1)*2 - 1, spread = Math.sign(u)*Math.pow(Math.abs(u), 1.6);   // cluster seeds at the center
+      const p = { x:AISLE_C + spread*3.2, y:CRAC.y - .2, k:.001 + ((i*7) % 5)*.0015, ph:i*.9, w:(i % 4 === 0) ? 0 : 0.75 + ((i*5) % 3)*0.12, ty:(((i*7) % 5) - 2)*0.75 };
+      const pts = [[p.x, p.y]];
+      for (let t = 0; t < 400; t++){
+        const [vx, vy] = flow(p, boost, aim); p.x += vx; p.y += vy; pts.push([p.x, p.y]);
+        if (p.x < AISLE_L || p.x > AISLE_R || p.y < .6) break;
+      }
+      out.push(pts);
+    }
+    return (lineCache[key] = out);
+  }
+  function drawStreams(sx, sy){
+    const boost = S.boosted, lines = streamlines(boost, aimRack());
+    const g = ctx.createLinearGradient(0, CRAC.y*sy, 0, 0);
+    const a = boost ? .75 : .22;
+    g.addColorStop(0, `rgba(150,222,245,${a})`); g.addColorStop(.7, `rgba(116,207,234,${a*.45})`); g.addColorStop(1, 'rgba(116,207,234,0)');
+    ctx.save(); ctx.globalCompositeOperation = 'lighter'; ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+    const path = pts => { ctx.beginPath(); ctx.moveTo(pts[0][0]*sx, pts[0][1]*sy); for (let i = 1; i < pts.length; i++) ctx.lineTo(pts[i][0]*sx, pts[i][1]*sy); };
+    ctx.strokeStyle = g; ctx.lineWidth = boost ? 1 : .8; ctx.globalAlpha = .35;
+    lines.forEach(pts => { path(pts); ctx.stroke(); });
+    ctx.globalAlpha = 1;
+    if (!reduced){
+      const t = performance.now()/1000;
+      ctx.lineWidth = boost ? 1.6 : 1.1; ctx.setLineDash(boost ? [26, 30] : [14, 40]);
+      lines.forEach((pts, i) => { ctx.lineDashOffset = -(t*(boost ? 90 : 28) + i*19); path(pts); ctx.stroke(); });
+      ctx.setLineDash([]);
+    }
+    ctx.restore();
+  }
+
+  let last = 0;
+  function frame(ts){
+    if (!reduced && !document.hidden && ts - last > 33){ step(); step(); drawField(); last = ts; }
+    requestAnimationFrame(frame);
+  }
+
+  reset();
+  applyMotion();
+  startFeed();
+  requestAnimationFrame(frame);
+  if (document.fonts) document.fonts.ready.then(drawField);
+})();
+</script>
+</body>
+</html>
