@@ -1,0 +1,82 @@
+/*
+ * Hand-authored — but every value here is a var() reference into
+ * tokens.generated.css, never a literal. Two jobs:
+ *  1. Theme switching for the page chrome (light/dark/data-theme), matching
+ *     reference/prototype.html's :root structure exactly.
+ *  2. Short, prototype-matching variable names (--c-ground, --ok, --crit, …)
+ *     that the rest of app.css reads, so that CSS stays close to the
+ *     original for the step-8 side-by-side check.
+ */
+
+:root {
+  --ground: var(--color-page-light-ground);
+  --ink: var(--color-page-light-ink);
+  --muted: var(--color-page-light-muted);
+  --line: var(--color-page-light-line);
+  --accent: var(--color-page-light-accent);
+  --font: var(--type-family);
+
+  /* app tokens: the instrument is always dark, like the room it lives in */
+  --c-ground: var(--color-app-ground);
+  --c-raise: var(--color-app-raise);
+  --c-frost: var(--color-app-frost);
+  --c-steel: var(--color-app-steel);
+  --c-rule: var(--color-app-rule);
+  --ok: var(--color-state-calm);
+  --rec: var(--color-state-recovering);
+  --warn: var(--color-state-rising);
+  --crit: var(--color-state-critical);
+  --crit-ink: var(--color-state-critical-ink);
+
+  box-sizing: border-box;
+  padding-top: env(safe-area-inset-top, 0px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --ground: var(--color-page-dark-ground);
+    --ink: var(--color-page-dark-ink);
+    --muted: var(--color-page-dark-muted);
+    --line: var(--color-page-dark-line);
+    --accent: var(--color-page-dark-accent);
+  }
+}
+:root[data-theme='dark'] {
+  --ground: var(--color-page-dark-ground);
+  --ink: var(--color-page-dark-ink);
+  --muted: var(--color-page-dark-muted);
+  --line: var(--color-page-dark-line);
+  --accent: var(--color-page-dark-accent);
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: inherit;
+}
+html {
+  scroll-padding-top: env(safe-area-inset-top, 0px);
+  height: 100%;
+}
+html,
+body {
+  margin: 0;
+}
+body {
+  min-height: 100%;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font);
+  -webkit-font-smoothing: antialiased;
+}
+[hidden] {
+  display: none !important;
+}
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}

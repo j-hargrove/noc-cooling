@@ -1,14 +1,13 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
+import { App } from './App'
+import { StatesPage } from './states/StatesPage'
 
-// Placeholder shell. Real regions land after the contract is approved
-// (see docs/BUILD_BRIEF.md, "Order of work").
-function App() {
-  return <div id="app-shell">NOC cooling alert — scaffold</div>
-}
+// Manual routing: the project has no router yet, and only needs two pages
+// (the product, and the /states verification page). See vercel.json for
+// the SPA rewrite that makes /states resolve in production.
+const page = window.location.pathname === '/states' ? <StatesPage /> : <App />
 
 createRoot(document.getElementById('root')!).render(
-  <StrictMode>
-    <App />
-  </StrictMode>,
+  <StrictMode>{page}</StrictMode>,
 )
