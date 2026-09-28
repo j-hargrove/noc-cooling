@@ -76,6 +76,8 @@ export function createInitialState(seed: Seed): SimState {
     standDownAt: null,
     autoSecond: true,
     holdBusy: false,
+    introDismissed: false,
+    locked: false,
   };
 }
 
@@ -377,13 +379,34 @@ export function setHoldBusy(state: SimState, holdBusy: boolean): SimState {
   return { ...state, holdBusy };
 }
 
-/** "Run the incident" — B-07's heat load starts spiking. */
-export function startIncident(state: SimState, autoSecond = true): StepResult {
+/** "Look around first" — dismisses the intro without starting anything. */
+export function dismissIntro(state: SimState): SimState {
+  if (state.introDismissed) return state;
+  return { ...state, introDismissed: true };
+}
+
+/** Tapping the lock-screen notification — the operator opens the app. */
+export function openLock(state: SimState): SimState {
+  if (!state.locked) return state;
+  return { ...state, locked: false };
+}
+
+/**
+ * "Run the incident" — B-07's heat load starts spiking. Always dismisses the
+ * intro (matches the prototype: both "Start the incident" and its intro-screen
+ * twin close the intro before running). `fromLock` mirrors the demo panel's
+ * "Start from lock screen" checkbox: the lock screen only actually engages if
+ * the focused rack is calm at the moment the incident starts.
+ */
+export function startIncident(state: SimState, options: { autoSecond?: boolean; fromLock?: boolean } = {}): StepResult {
+  const { autoSecond = true, fromLock = false } = options;
   const s = cloneState(state);
   const events: SimEvent[] = [];
   s.incident = 88;
   s.racks['B-07'].flare = 1;
   s.autoSecond = autoSecond;
+  s.introDismissed = true;
+  s.locked = fromLock && s.racks[s.focus].state === 'calm';
   s.started = true;
   s.startClock = s.clock;
   s.startN = s.n;

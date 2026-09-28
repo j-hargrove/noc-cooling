@@ -111,4 +111,8 @@ export interface SimState {
   autoSecond: boolean;
   /** Operator is mid hold-to-confirm; suppresses the focus handoff timer. */
   holdBusy: boolean;
+  /** The intro overlay ("Start the incident" / "Look around first") has been dismissed. */
+  introDismissed: boolean;
+  /** The lock screen is currently covering the app. */
+  locked: boolean;
 }

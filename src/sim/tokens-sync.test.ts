@@ -1,11 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
+import { MULTI_RACK_OVERRIDE, ROW_WEIGHTS } from '../compose/layoutTokens';
 import {
   AFTERSHOCK_READINGS,
   FOCUS_HANDOFF_READINGS,
   STAND_DOWN_READINGS,
 } from './constants';
+import type { ShownState } from './types';
 
 /**
  * src/ is the TS build root, so src/sim/constants.ts can't `import` from
@@ -32,6 +34,28 @@ describe('sim constants stay in sync with contract/tokens.json', () => {
   it('the stand-down conversion matches standDownMs / readIntervalMs, rounded', () => {
     const expected = Math.round(tokens.timing.standDownMs / tokens.timing.readIntervalMs);
     expect(STAND_DOWN_READINGS).toBe(expected);
+  });
+});
+
+describe('compose layer row weights stay in sync with contract/tokens.json → layout', () => {
+  const SHOWN_STATES: ShownState[] = ['calm', 'recovering', 'rising', 'critical', 'offline'];
+
+  for (const shown of SHOWN_STATES) {
+    it(`layout.weights.${shown} matches ROW_WEIGHTS.${shown} field-for-field`, () => {
+      expect(ROW_WEIGHTS[shown]).toEqual(tokens.layout.weights[shown]);
+    });
+  }
+
+  it('layout.multiRackOverride matches MULTI_RACK_OVERRIDE field-for-field', () => {
+    const { field, queue, readout } = tokens.layout.multiRackOverride;
+    expect(MULTI_RACK_OVERRIDE).toEqual({ field, queue, readout });
+  });
+
+  it('every row in ROW_WEIGHTS matches the contract\'s declared row order', () => {
+    expect(tokens.layout.rows).toEqual(['field', 'queue', 'readout', 'action']);
+    for (const shown of SHOWN_STATES) {
+      expect(Object.keys(ROW_WEIGHTS[shown]).sort()).toEqual([...tokens.layout.rows].sort());
+    }
   });
 });
 

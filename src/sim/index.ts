@@ -14,6 +14,8 @@ export {
   undo,
   switchFocus,
   setHoldBusy,
+  dismissIntro,
+  openLock,
   startIncident,
   failSecondRack,
   dispatchTech,
