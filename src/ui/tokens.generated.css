@@ -530,7 +530,7 @@
   --focus-demo-color: var(--accent);
   --focus-demo-offset: 2px;
   --shadow-device: inset 0 1px 0 rgba(255,255,255,.09), 0 0 0 1px rgba(0,0,0,.35), 0 50px 90px -40px rgba(0,0,0,.6);
-  --shadow-outcome: 0 -10px 36px -12px rgba(0,0,0,.4), inset 0 0 0 1px rgba(227,236,241,.13);
+  --shadow-outcome: 0 -10px 36px -12px rgba(0,0,0,.4), inset 0 0 0 0.75px rgba(227,236,241,.13);
   --shadow-focused-rack-glow-blur: 14;
   --shadow-focused-rack-glow-color: state colour of the focused rack;
   --blur-intro: blur(6px);
@@ -548,12 +548,12 @@
   --stroke-spark-projection-boost: 2.6px;
   --stroke-spark-head: 3px radius;
   --stroke-field-rack-calm: 1;
-  --stroke-field-rack-alert: 1.4;
-  --stroke-field-rack-focused: 2.2;
-  --stroke-field-rack-down: 1.2;
+  --stroke-field-rack-alert: 1;
+  --stroke-field-rack-focused: 1.5;
+  --stroke-field-rack-down: 1;
   --stroke-field-chip: 1;
   --stroke-field-crac-idle: 1;
-  --stroke-field-crac-boosted: 1.6;
+  --stroke-field-crac-boosted: 1;
   --stroke-field-stream-idle: 0.8;
   --stroke-field-stream-boosted: 1;
   --stroke-field-stream-dash-speed-idle: 28;
@@ -561,4 +561,5 @@
   --stroke-field-stream-base-alpha: 0.35;
   --stroke-field-stream-dash-width-idle: 1.1;
   --stroke-field-stream-dash-width-boosted: 1.6;
+  --stroke-hairline-width: 0.75px;
 }

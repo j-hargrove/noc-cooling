@@ -264,7 +264,7 @@
   border-radius: var(--radius-field);
   overflow: hidden;
   background: var(--color-field-background);
-  border: 1px solid var(--c-rule);
+  border: var(--stroke-hairline-width) solid var(--c-rule);
   transform-origin: 50% 100%;
   transition: transform var(--motion-field-tilt-duration) var(--motion-easing-settle-field) var(--motion-field-tilt-delay);
 }
@@ -281,6 +281,11 @@
   fill: var(--color-field-rack-fill);
   stroke: var(--color-field-rack-stroke-calm);
   stroke-width: var(--stroke-field-rack-calm);
+  /* the field's viewBox is in grid units, not px — without this, every
+     stroke-width above scales up with it (also set as a JSX attribute in
+     ThermalField.tsx as a belt-and-suspenders; CSS wins where both apply,
+     they're kept identical on purpose). */
+  vector-effect: non-scaling-stroke;
 }
 .field-rack[data-alert='1'] {
   stroke-width: var(--stroke-field-rack-alert);
@@ -309,6 +314,7 @@
   fill: var(--color-field-crac-fill);
   stroke: var(--color-field-crac-stroke-idle);
   stroke-width: var(--stroke-field-crac-idle);
+  vector-effect: non-scaling-stroke;
 }
 .field-crac[data-boosted='1'] {
   stroke: var(--color-field-crac-stroke-boosted);
@@ -365,7 +371,7 @@
   padding: var(--space-event-padding);
   border-radius: var(--radius-pill);
   background: var(--color-surface-event);
-  border: 1px solid var(--c-rule);
+  border: var(--stroke-hairline-width) solid var(--c-rule);
   color: var(--c-frost);
   font-size: var(--type-event-size);
   font-variation-settings: 'wdth' var(--type-event-wdth), 'wght' var(--type-event-wght);
@@ -794,7 +800,7 @@
   gap: var(--space-outcome-stats-gap);
   margin: var(--space-outcome-stats-margin);
   padding: var(--space-outcome-stats-padding);
-  border-top: 1px solid var(--c-rule);
+  border-top: var(--stroke-hairline-width) solid var(--c-rule);
 }
 .o-stats dt {
   font-size: var(--type-outcome-stat-label-size);

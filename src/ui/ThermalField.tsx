@@ -45,7 +45,7 @@ export function ThermalField({ racks, focus, boosted, aim }: ThermalFieldProps) 
   return (
     <section className="field" aria-label="Thermal map of cold aisle 4">
       <canvas hidden aria-hidden="true" />
-      <svg className="field-viewport" viewBox={`0 0 ${GW} ${GH}`} role="img" aria-label={`Thermal map. Heat is concentrated at rack ${hottest.id}.`}>
+      <svg className="field-viewport" viewBox={`0 0 ${GW} ${GH}`} preserveAspectRatio="none" role="img" aria-label={`Thermal map. Heat is concentrated at rack ${hottest.id}.`}>
         {GRID_RACKS.map((r) => {
           const view = r.modeled ? racks[r.modeled] : null;
           const alert = view ? view.shown !== 'calm' && !view.down : false;
@@ -64,6 +64,7 @@ export function ThermalField({ racks, focus, boosted, aim }: ThermalFieldProps) 
                 width={RACK.w}
                 height={RACK.h}
                 rx={0.8}
+                vectorEffect="non-scaling-stroke"
                 style={alert || down ? { stroke: down ? undefined : stateColor } : undefined}
               />
               <text className="field-rack-label" data-alert={alert ? '1' : '0'} data-down={down ? '1' : '0'} x={r.x + RACK.w / 2} y={r.y + RACK.h / 2} fontSize={0.78} textAnchor="middle" dominantBaseline="central" style={alert ? { fill: stateColor } : undefined}>
@@ -72,7 +73,7 @@ export function ThermalField({ racks, focus, boosted, aim }: ThermalFieldProps) 
             </g>
           );
         })}
-        <rect className="field-crac" data-boosted={boosted ? '1' : '0'} x={CRAC.x} y={CRAC.y} width={CRAC.w} height={CRAC.h} rx={0.9} />
+        <rect className="field-crac" data-boosted={boosted ? '1' : '0'} x={CRAC.x} y={CRAC.y} width={CRAC.w} height={CRAC.h} rx={0.9} vectorEffect="non-scaling-stroke" />
         <text className="field-crac-label" data-boosted={boosted ? '1' : '0'} x={CRAC.x + CRAC.w / 2} y={CRAC.y + CRAC.h / 2} fontSize={0.8} textAnchor="middle" dominantBaseline="central">
           {boosted ? 'CRAC-3 at 100%' : 'CRAC-3 at 60%'}
         </text>
