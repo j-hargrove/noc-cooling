@@ -25,6 +25,13 @@ export interface Fixture {
   label: string;
   description: string;
   state: SimState;
+  /**
+   * Seeds the readout/action-slab hold progress for display (0..1), default 0.
+   * A fixed value, not a driven gesture: driving a real hold via timed mouse
+   * events would make the "critical-holding" baseline depend on exactly how
+   * long the pointer was held, which isn't reproducible across runs/machines.
+   */
+  holdProgress?: number;
 }
 
 /** A settled, post-intro starting point every fixture builds from. */
@@ -53,7 +60,7 @@ function critical(): Fixture {
 
 function criticalHolding(): Fixture {
   const state = withRack(base(5), 'B-07', { T: 33.2, slope: 0.02, state: 'critical' });
-  return { id: 'critical-holding', label: 'Critical, hold in progress', description: 'The projection path mid-confirm: what happens with the fix vs. without it.', state };
+  return { id: 'critical-holding', label: 'Critical, hold in progress', description: 'The projection path mid-confirm: what happens with the fix vs. without it.', state, holdProgress: 0.5 };
 }
 
 function offline(): Fixture {

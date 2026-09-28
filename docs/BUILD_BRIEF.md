@@ -56,6 +56,8 @@ Save the following as docs/decisions.md, verbatim. Treat it as binding.
    baselines; CI fails on visual diff. Show me the baselines to approve.
 5. Port the canvas field and streamlines.
 6. Wire the live loop, demo harness, lock screen, and outcome sheets.
+   UI gates shockwave and notify events on locked; the shockwave never
+   fires behind the lock screen.
 7. Embed mode: ?embed=1 renders only the phone and controls (no page chrome,
    transparent background), sized for an iframe. On narrow viewports, a static
    preview with an "Open full screen" link instead.

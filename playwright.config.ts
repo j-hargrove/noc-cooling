@@ -13,6 +13,13 @@ export default defineConfig({
     baseURL: 'http://localhost:4173',
     viewport: { width: 390, height: 844 },
   },
+  // Baselines are generated in one Linux sandbox and compared in CI's own
+  // Linux runner; a small tolerance absorbs anti-aliasing/font-hinting noise
+  // between the two without masking a real visual regression (color, layout,
+  // and missing-content diffs all move far more than 1% of pixels).
+  expect: {
+    toHaveScreenshot: { maxDiffPixels: 40 },
+  },
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } } },
   ],

@@ -18,7 +18,7 @@ const INERT_HANDLERS: InstrumentHandlers = {
 };
 
 function FixtureCard({ fixture }: { fixture: Fixture }) {
-  const [holdProgress, setHoldProgress] = useState(0);
+  const [holdProgress, setHoldProgress] = useState(fixture.holdProgress ?? 0);
   const props = presentInstrument(
     fixture.state,
     { ...INERT_HANDLERS, onHoldProgressChange: setHoldProgress },
