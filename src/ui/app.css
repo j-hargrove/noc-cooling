@@ -302,10 +302,14 @@
 .field-rack-label {
   fill: var(--color-field-rack-label-calm);
   font-family: var(--font);
-  font-variation-settings: 'wdth' 100, 'wght' 500;
+  /* No wdth: contract/tokens.json's fieldCanvas.rackLabel has no wdth entry,
+     matching reference/prototype.html's own ctx.font string (`"${weight}
+     ${size}px Archivo, sans-serif"`), which never sets a stretch/width axis
+     either — this renders at Archivo's default width in both places. */
+  font-variation-settings: 'wght' var(--type-field-canvas-rack-label-wght-calm);
 }
 .field-rack-label[data-alert='1'] {
-  font-variation-settings: 'wdth' 100, 'wght' 650;
+  font-variation-settings: 'wght' var(--type-field-canvas-rack-label-wght-alert);
 }
 .field-rack-label[data-down='1'] {
   fill: var(--color-field-rack-down-stroke);
@@ -323,11 +327,12 @@
 .field-crac-label {
   fill: var(--color-field-crac-ink-idle);
   font-family: var(--font);
-  font-variation-settings: 'wdth' 100, 'wght' 500;
+  /* No wdth — see .field-rack-label above; same reasoning, same source (contract/tokens.json's fieldCanvas.crac). */
+  font-variation-settings: 'wght' var(--type-field-canvas-crac-wght-idle);
 }
 .field-crac-label[data-boosted='1'] {
   fill: var(--color-field-crac-ink-boosted);
-  font-variation-settings: 'wdth' 100, 'wght' 650;
+  font-variation-settings: 'wght' var(--type-field-canvas-crac-wght-boosted);
 }
 .shock {
   position: absolute;
