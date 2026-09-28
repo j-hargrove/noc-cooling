@@ -159,8 +159,9 @@ element actually sits on, not against the app ground by default.
 | calm `#74CFEA` on app ground | 10.16 | AA, AAA |
 | recovering `#9ED9C4` on app ground | 11.29 | AA, AAA |
 | rising `#FFB547` on app ground | 10.25 | AA, AAA |
-| **critical `#C96764` on app ground** | **4.81** | AA |
-| **critical `#C96764` on raise `#112836`** | **4.06** | **below AA — see below** |
+| critical `#C96764` on app ground | 4.81 | AA |
+| critical `#C96764` on raise `#112836` | 4.06 | below AA — not used for text there, see below |
+| criticalOnRaised `#D4736F` on raise `#112836` | 4.69 | AA |
 | white on critical button `#A84A48` | 5.62 | AA |
 | `#1E1204` on warn button `#FFB547` | 10.45 | AA, AAA |
 | `#06202B` on ok primary `#74CFEA` | 9.49 | AA, AAA |
@@ -175,23 +176,29 @@ element actually sits on, not against the app ground by default.
 | focus ring `#3E6652` on light ground | 5.36 | AA |
 | focus ring `#7FA38F` on dark ground | 6.98 | AA |
 
-**Two findings to resolve before the UI step.**
+**Two findings, ruled on by the proposer.**
 
-1. **Critical red on the raised surface is 4.06:1, below AA.** It is fine on the
-   app ground (4.81), which is where the decisions doc measured it. The
-   shortfall is specifically a *queued* rack that is critical: its state word
-   (13.5px) and temperature (16px) render in `#C96764` on `#112836` inside the
-   queue card. Everything else critical-coloured sits on the app ground and
-   passes. Options, in order of preference: darken the queue card ground, or
-   lift critical red to ~`#D4736F` (5.0:1 on raise) for text on raised
-   surfaces only. **Not** a change to the signal colour on the app ground —
-   that value is tuned and stays. Flagging rather than fixing, because
-   recolouring is the proposer's call, not the committer's.
+1. **Critical red on the raised surface was 4.06:1, below AA.** The shortfall
+   was specifically a *queued* rack that is critical: its state word (13.5px)
+   and temperature (16px) render on `--c-raise` (`#112836`) inside the queue
+   card. Ruling: add `color.state.criticalOnRaised` (`#D4736F`, 4.69:1 on
+   raise) and use it only for text that sits on a raised surface — currently
+   the queue card's `.qw` and `.qt`. The queue card's ground is unchanged, and
+   `color.state.critical` (`#C96764`) stays the signal red everywhere else,
+   including the queue card's border, glyph and urgent-chip fill (graphical
+   objects, already ≥3:1). Recorded in `docs/decisions.md` under Color and in
+   `contract/tokens.json` (`color.state.criticalOnRaised`) and
+   `contract/components.md` (queue card).
 
-2. **The offline numeral `#5D7282` is 3.60:1** and only clears AA as large
-   text. At 77px that is legitimate, but it is the narrowest margin in the
-   system and it is on the one state that means hardware is already lost. Worth
-   a deliberate confirmation that it stays.
+2. **The offline numeral `#5D7282` is 3.60:1**, clearing AA only as large text.
+   Ruling: kept, deliberately. Once a rack is offline its last temperature is
+   stale — the numeral is dimmed on purpose, and state is carried at full
+   contrast by the `Offline` word and the power glyph, not by the number. Rule:
+   the offline numeral may never render below 24px (recorded as `minSize` on
+   `type.readout.numeral.offline` in `contract/tokens.json`); the prototype's
+   actual size (`min(77px,9.1cqh)`) is well above that floor, so this is a
+   guard against a future re-tune shrinking it past the point where large-text
+   AA no longer applies, not a change to current behaviour.
 
 **Not colour-dependent.** Every state carries a distinct glyph shape and a
 distinct word alongside its colour, so state is never conveyed by hue alone.

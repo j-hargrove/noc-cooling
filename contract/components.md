@@ -159,7 +159,14 @@ non-focused rack is off calm — this is what turns the single-zone layout into
 the comparison layout.
 
 **States and variants.**
-- Colour (`--qc`) is the rack's own state colour, not the focused rack's.
+- Colour (`--qc`) is the rack's own state colour, not the focused rack's. It
+  sets the border, the glyph icon and the urgent chip fill.
+- **Text is the one exception:** the card sits on `color.app.raise`, and
+  `color.state.critical` only clears 4.1:1 there — below AA for the state
+  word and temperature. When the queued rack is critical, `.qw` and `.qt` use
+  `color.state.criticalOnRaised` instead; the border, glyph and chip fill keep
+  using `color.state.critical` (they're graphical objects/large fills, not
+  body text, and already clear 3:1). No other state needs the substitution.
 - **"More urgent"** chip when the queued rack outranks the focused one, or
   ranks equal while the focused rack has already been acted on and it has not.
 - Cause line, in priority order: `Offline, shut down at 38°C` → `Manual
@@ -170,7 +177,8 @@ the comparison layout.
 - Enters with `motion.queueCardIn`; leaves by unmounting.
 
 **Tokens.** `color.app.raise`, `color.app.frost`, `color.app.steel`,
-`color.state.*`, `color.state.criticalInk` (urgent chip ink),
+`color.state.*`, `color.state.criticalOnRaised` (`.qw`/`.qt` text when
+critical), `color.state.criticalInk` (urgent chip ink),
 `radius.queueCard`, `radius.urgentChip`, `space.queue`, `type.queue.*`,
 `motion.queueCardIn`, `focus.queueCard`.
 

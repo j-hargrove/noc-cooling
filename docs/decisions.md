@@ -18,6 +18,8 @@
   and the single primary action. Never used for containers, panels, or borders.
 - UI red #C96764 (AA on dark ground). Button fill #A84A48 with white text.
   Heat load slider #950606.
+- Critical text on raised surfaces uses #D4736F to hold AA; #C96764 stays the
+  red on the app ground.
 - Demo/panel controls: desaturated dark green (#3E6652 light, #7FA38F dark).
   Never blue (blue = cold air / calm).
 - Thermal plume palette is a heat map, separate from alert color.
