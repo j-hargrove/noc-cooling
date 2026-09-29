@@ -57,6 +57,10 @@
 .app[data-state='critical'] {
   --sc: var(--crit);
 }
+/* Offline is a rack condition, not a fifth alert state: steel, never a state colour. */
+.app[data-state='offline'] {
+  --sc: var(--color-state-offline);
+}
 .app::after {
   content: '';
   position: absolute;
@@ -870,7 +874,7 @@
   -webkit-backdrop-filter: var(--blur-lock);
   backdrop-filter: var(--blur-lock);
   transition:
-    opacity var(--motion-lock-open-duration) var(--motion-easing-lock),
+    opacity var(--motion-lock-open-duration) var(--motion-easing-ease),
     transform var(--motion-lock-open-duration) var(--motion-easing-lock);
 }
 .lock.opening {

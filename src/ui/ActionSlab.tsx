@@ -57,7 +57,9 @@ export function ActionSlab({ copy, onConfirm, onOverride, onUndo, onHoldBusyChan
           {copy.why}
         </p>
         {copy.status !== null && (
-          <p key={copy.actedAt} className={`status${copy.statusDone ? ' done' : ''} fresh`}>
+          // The slide-in (motion.statusFresh) marks a fix landing — not an override,
+          // matching the prototype, which only flags `fresh` in act().
+          <p key={copy.actedAt} className={`status${copy.statusDone ? ' done fresh' : ''}`}>
             {copy.status}
           </p>
         )}

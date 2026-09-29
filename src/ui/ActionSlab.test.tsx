@@ -17,6 +17,20 @@ const offered: ActionSlabCopy = {
 };
 const withdrawn: ActionSlabCopy = { ...offered, offerAction: false, why: 'Rack B-07 shut down at 38°C to protect hardware.' };
 
+describe('ActionSlab status line', () => {
+  const acted = (statusDone: boolean, status: string): ActionSlabCopy => ({ ...withdrawn, status, statusDone, undoLabel: 'Undo', actedAt: '02:14:30' });
+
+  it('a landed fix slides in (motion.statusFresh) with its check', () => {
+    const { container } = render(<ActionSlab copy={acted(true, 'CRAC-3 spinning up, 34%. Logged at 02:14:30.')} onConfirm={() => {}} onOverride={() => {}} onUndo={() => {}} />);
+    expect(container.querySelector('.status')!.className).toBe('status done fresh');
+  });
+
+  it('an override does not slide in — the prototype only flags a fix as fresh', () => {
+    const { container } = render(<ActionSlab copy={acted(false, 'Manual control of B-07 by J. Hargrove since 02:14:30. Logged.')} onConfirm={() => {}} onOverride={() => {}} onUndo={() => {}} />);
+    expect(container.querySelector('.status')!.className).toBe('status');
+  });
+});
+
 describe('ActionSlab hold-to-confirm', () => {
   beforeEach(() => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'requestAnimationFrame', 'cancelAnimationFrame', 'performance'] });

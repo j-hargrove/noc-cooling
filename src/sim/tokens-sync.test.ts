@@ -45,9 +45,8 @@ describe('sim constants stay in sync with contract/tokens.json', () => {
     expect(AFTERSHOCK_READINGS).toBe(tokens.timing.aftershockReadings);
   });
 
-  it('the focus handoff conversion matches focusHandoffMs / readIntervalMs, rounded', () => {
-    const expected = Math.round(tokens.timing.focusHandoffMs / tokens.timing.readIntervalMs);
-    expect(FOCUS_HANDOFF_READINGS).toBe(expected);
+  it('the focus handoff matches timing.focusHandoffReadings (a reading count by design, not converted from focusHandoffMs)', () => {
+    expect(FOCUS_HANDOFF_READINGS).toBe(tokens.timing.focusHandoffReadings);
   });
 
   it('the stand-down conversion matches standDownMs / readIntervalMs, rounded', () => {

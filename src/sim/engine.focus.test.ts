@@ -57,15 +57,19 @@ describe('focus rule (docs/decisions.md: "never move focus off a rack the operat
     expect(state.focus).toBe('A-03');
   });
 
-  it('moves focus to the next unhandled rack one reading after the operator acts', () => {
+  it('moves focus to the next unhandled rack two readings after the operator acts (1.5–3.0s)', () => {
     let s = createInitialState(306);
     s = withRack(s, 'B-07', { state: 'rising', T: 29 });
     s = withRack(s, 'A-03', { state: 'critical', T: 33 });
     s = { ...s, focus: 'B-07' };
 
     s = act(s).state;
+    expect(FOCUS_HANDOFF_READINGS).toBe(2);
     expect(s.focus).toBe('B-07'); // doesn't move the instant the action is confirmed
     expect(s.focusHandoffAt).toBe(s.n + FOCUS_HANDOFF_READINGS);
+
+    s = advanceReading(s).state;
+    expect(s.focus).toBe('B-07'); // nor on the very next reading, which may land moments later
 
     s = advanceReading(s).state;
     expect(s.focus).toBe('A-03');
@@ -79,7 +83,8 @@ describe('focus rule (docs/decisions.md: "never move focus off a rack the operat
 
     s = act(s).state; // schedules a handoff away from B-07
     s = { ...s, focus: 'A-03' }; // operator manually switched before the handoff fired
-    s = advanceReading(s).state;
+    for (let i = 0; i < FOCUS_HANDOFF_READINGS; i++) s = advanceReading(s).state; // run past the handoff point
+    expect(s.focusHandoffAt).toBeNull();
     expect(s.focus).toBe('A-03'); // handoff no-ops: focus wasn't on B-07 anymore
   });
 

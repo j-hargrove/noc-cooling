@@ -70,7 +70,7 @@ export function Readout({ rack, shown, multiRack, holdProgress, projection, swap
   const perMin = rack.ratePerMin;
   const rateText = Math.abs(perMin) < 0.05 ? 'Steady' : `${perMin > 0 ? '▲' : '▼'} ${Math.abs(perMin).toFixed(1)}°C/min`;
 
-  let projPaths: { none: string; ghost: string; solid: string; caption: string } | null = null;
+  let projPaths: { none: string; ghost: string; solid: string; ifNothing: string; ifFixed: string } | null = null;
   if (projection) {
     const withX = (arr: number[]): [number, number][] => arr.map((t, k) => [HX + (k * (W - HX)) / STEPS, t]);
     const nonePts = withX(projection.none);
@@ -80,7 +80,8 @@ export function Readout({ rack, shown, multiRack, holdProgress, projection, swap
       none: pathFrom(nonePts),
       ghost: pathFrom(fixedPts),
       solid: solidPts.length > 1 ? pathFrom(solidPts) : '',
-      caption: `In 3 min: ${projection.none[STEPS].toFixed(1)}°C if nothing changes, ${projection.fixed[STEPS].toFixed(1)}°C ${projection.verb}`,
+      ifNothing: `${projection.none[STEPS].toFixed(1)}°C if nothing changes`,
+      ifFixed: `${projection.fixed[STEPS].toFixed(1)}°C ${projection.verb}`,
     };
   }
 
@@ -117,7 +118,12 @@ export function Readout({ rack, shown, multiRack, holdProgress, projection, swap
         <circle className="hd" cx={HX} cy={y(history[history.length - 1])} r={3} />
       </svg>
 
-      {projPaths && <p className="proj">{projPaths.caption}</p>}
+      {/* The two outcomes carry their own colours (state colour vs. cyan), as in the prototype: the caption is the text twin of the two paths. */}
+      {projPaths && (
+        <p className="proj">
+          In 3 min: <span className="a">{projPaths.ifNothing}</span>, <span className="b">{projPaths.ifFixed}</span>
+        </p>
+      )}
     </section>
   );
 }

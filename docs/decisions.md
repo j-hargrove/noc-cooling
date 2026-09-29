@@ -38,6 +38,8 @@
   gradually.
 - Focus rule: never move focus off a rack the operator hasn't acted on. After
   acting, focus moves to the next unhandled rack.
+  The hand-off comes 2 readings after acting, so 1.5–3.0s by design, not the
+  prototype's fixed 1.6s: timed events are reading counts throughout.
 - Airflow goes only where the operator sent it, stays on that rack until
   stand-down, and CRAC-3 stands down to 60% after every resolution.
 - Second rack (A-03 fan failure) fails ~14 readings after the first outcome,

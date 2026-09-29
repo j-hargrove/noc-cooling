@@ -47,7 +47,12 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npx playwright install --with-deps chromium
-      - run: npx playwright test --update-snapshots
+      # =all, not the default (=changed): toHaveScreenshot's per-pixel colour
+      # tolerance can pass a real colour change (step 8: offline cyan -> steel
+      # passed at ~1000 differing pixels), and =changed only rewrites failing
+      # snapshots — it would silently keep the old image. Unchanged fixtures
+      # come out byte-identical on this runner; commit only the ones that differ.
+      - run: npx playwright test --update-snapshots=all
       - uses: actions/upload-artifact@v4
         with:
           name: updated-screenshots
