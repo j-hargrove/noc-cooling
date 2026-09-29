@@ -94,7 +94,7 @@ deliberate acts, and neither can be triggered by a stray single press.
 - **Focus after acting.** Confirming from the keyboard moves focus to the undo
   control, so the reversal is one key away from the action. Confirming by
   pointer leaves focus alone.
-- The sim's focus hand-off (`timing.focusHandoffMs`) is suppressed while a hold
+- The sim's focus hand-off (`timing.focusHandoffReadings`, 1.5–3.0s) is suppressed while a hold
   or an arming window is in progress. The target must never move under a
   half-finished confirmation.
 

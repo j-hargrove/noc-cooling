@@ -492,6 +492,7 @@
   --motion-intro-out-hidden-after-ms: 460;
   --motion-lock-open-duration: 0.5s;
   --motion-lock-open-easing: lock;
+  --motion-lock-open-opacity-easing: ease;
   --motion-lock-open-to-scale: 1.08;
   --motion-lock-open-hidden-after-ms: 480;
   --motion-notif-in-transform: 0.6s;
@@ -512,6 +513,7 @@
   --timing-hold-hint-revert-ms: 2000;
   --timing-keyboard-arm-window-ms: 3000;
   --timing-focus-handoff-ms: 1600;
+  --timing-focus-handoff-readings: 2;
   --timing-stand-down-ms: 2500;
   --timing-outcome-focus-ms: 300;
   --timing-live-region-reset-ms: 60;

@@ -41,8 +41,14 @@ export const RACK_IDS: RackId[] = ['B-07', 'A-03'];
  * setTimeouts in the prototype become sim events driven by reading count
  * (docs/BUILD_BRIEF.md). Converted at readIntervalMs = 1500ms:
  */
-/** focusHandoffMs 1600ms / 1500ms ≈ 1 reading. */
-export const FOCUS_HANDOFF_READINGS = 1;
+/**
+ * Focus moves to the next unhandled rack 2 readings after acting: 1.5-3.0s,
+ * depending on where in the reading interval the action lands. The
+ * prototype's fixed 1600ms timer is deliberately not reproduced — reading-count
+ * events are the architecture (docs/decisions.md). 1 reading (0-1.5s) could
+ * move the target almost as the action lands.
+ */
+export const FOCUS_HANDOFF_READINGS = 2;
 /** standDownMs 2500ms / 1500ms ≈ 1.67, rounded up to 2 readings. */
 export const STAND_DOWN_READINGS = 2;
 /** Already reading-count-native in the prototype (S.n + 14). */

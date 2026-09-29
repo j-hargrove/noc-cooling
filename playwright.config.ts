@@ -13,13 +13,11 @@ export default defineConfig({
     baseURL: 'http://localhost:4173',
     viewport: { width: 390, height: 844 },
   },
-  // Baselines are generated in one Linux sandbox and compared in CI's own
-  // Linux runner; a small tolerance absorbs anti-aliasing/font-hinting noise
-  // between the two without masking a real visual regression (color, layout,
-  // and missing-content diffs all move far more than 1% of pixels).
-  expect: {
-    toHaveScreenshot: { maxDiffPixels: 40 },
-  },
+  // No global toHaveScreenshot tolerance: /states baselines are compared by
+  // tests/e2e/visual.ts — pixel-exact everywhere except the canvas field, which
+  // gets a small per-pixel tolerance for its measured run-to-run noise. The old
+  // global tolerance (threshold 0.2 + 40px) passed real colour and text changes.
+  // Baselines are generated and checked on CI's runner (update-screenshots job).
   projects: [
     { name: 'chromium', use: { ...devices['Desktop Chrome'], viewport: { width: 390, height: 844 } } },
   ],
