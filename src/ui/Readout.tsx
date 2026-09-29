@@ -1,8 +1,10 @@
+import { useLayoutEffect, useRef } from 'react';
 import type { Projection } from '../compose/projection';
 import type { RackView } from '../compose/rackView';
 import { clamp } from '../sim/format';
 import type { ShownState } from '../sim/types';
 import { Glyph } from './Glyphs';
+import { restartClass } from './restartClass';
 import { STATE_WORD } from './stateWord';
 
 export interface ReadoutProps {
@@ -12,6 +14,12 @@ export interface ReadoutProps {
   /** 0..1, drives how far the solid ("if fixed") projection path has drawn in. */
   holdProgress: number;
   projection: Projection | null;
+  /**
+   * Increments each time focus moves to a different rack; the readout
+   * replays motion.readoutSwap so the operator sees the numbers now belong to
+   * another rack (contract/components.md §4). 0/omitted = never swapped.
+   */
+  swapToken?: number;
 }
 
 function DigitStrip({ digit }: { digit: number }) {
@@ -47,7 +55,12 @@ const STEPS = 12;
 const y = (t: number) => H - clamp((t - LO) / (HI - LO), 0, 1) * H;
 const pathFrom = (pts: [number, number][]) => pts.map(([x, t], i) => `${i ? 'L' : 'M'}${x.toFixed(1)} ${y(t).toFixed(1)}`).join('');
 
-export function Readout({ rack, shown, multiRack, holdProgress, projection }: ReadoutProps) {
+export function Readout({ rack, shown, multiRack, holdProgress, projection, swapToken = 0 }: ReadoutProps) {
+  const sectionRef = useRef<HTMLElement>(null);
+  useLayoutEffect(() => {
+    if (swapToken > 0 && sectionRef.current) restartClass(sectionRef.current, 'swap');
+  }, [swapToken]);
+
   const proj = projection !== null;
   const HX = proj ? 205 : W;
   const history = rack.history;
@@ -74,7 +87,7 @@ export function Readout({ rack, shown, multiRack, holdProgress, projection }: Re
   return (
     // font-size at multi-rack is set by CSS off the ancestor .app[data-multi]; this
     // attribute exists so the region is independently inspectable/testable.
-    <section className="readout" data-multi-rack={multiRack ? '1' : '0'}>
+    <section ref={sectionRef} className="readout" data-multi-rack={multiRack ? '1' : '0'}>
       <div className="state">
         <Glyph className="glyph" kind={shown} />
         <span>{STATE_WORD[shown]}</span>

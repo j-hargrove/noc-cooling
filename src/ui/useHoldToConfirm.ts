@@ -5,11 +5,18 @@ import { HOLD_HINT_REVERT_MS, HOLD_MS, KEYBOARD_ARM_WINDOW_MS } from './timing';
 export interface HoldToConfirmOptions {
   /** The button's resting label; restored once the gesture ends or the arm window expires. */
   baseLabel: string;
-  onConfirm: () => void;
+  /** `via` says which path confirmed — focus moves to undo only after a keyboard/AT confirm (contract/a11y-spec.md §2). */
+  onConfirm: (via: 'pointer' | 'keyboard') => void;
   /** Mirrors holdBusy up to the caller — suppresses the sim's scheduled focus handoff (contract/a11y-spec.md §2). */
   onBusyChange?: (busy: boolean) => void;
   /** 0..1, for a live consumer (e.g. the readout's projection path) to track alongside. */
   onProgressChange?: (progress: number) => void;
+  /**
+   * Whether the action is still on offer. Going false mid-gesture (the rack
+   * shut down, or focus moved) aborts the hold or the keyboard arming on the
+   * spot — a confirmation must never complete on a button that's gone.
+   */
+  offered?: boolean;
 }
 
 /**
@@ -18,7 +25,7 @@ export interface HoldToConfirmOptions {
  * full equivalents: each requires two distinct deliberate acts, and neither
  * fires on a single stray press.
  */
-export function useHoldToConfirm({ baseLabel, onConfirm, onBusyChange, onProgressChange }: HoldToConfirmOptions) {
+export function useHoldToConfirm({ baseLabel, onConfirm, onBusyChange, onProgressChange, offered = true }: HoldToConfirmOptions) {
   const [label, setLabel] = useState(baseLabel);
   const [progress, setProgress] = useState(0);
   const armedRef = useRef(false);
@@ -73,7 +80,7 @@ export function useHoldToConfirm({ baseLabel, onConfirm, onBusyChange, onProgres
     setProg(p);
     if (p >= 1) {
       cancel();
-      onConfirm();
+      onConfirm('pointer');
       return;
     }
     rafRef.current = requestAnimationFrame(() => tickRef.current?.());
@@ -108,7 +115,7 @@ export function useHoldToConfirm({ baseLabel, onConfirm, onBusyChange, onProgres
         idleRef.current = true;
         setBusy(false);
         setLabel(baseLabel);
-        onConfirm();
+        onConfirm('keyboard');
       } else {
         armedRef.current = true;
         idleRef.current = false;
@@ -124,6 +131,23 @@ export function useHoldToConfirm({ baseLabel, onConfirm, onBusyChange, onProgres
     },
     [baseLabel, onConfirm, setBusy],
   );
+
+  // The action was withdrawn mid-gesture: abort without confirming, and
+  // without the "hold for one second" hint — the operator didn't let go early.
+  useEffect(() => {
+    if (offered) return;
+    const midHold = rafRef.current !== undefined;
+    if (!midHold && !armedRef.current) return;
+    if (midHold) cancelAnimationFrame(rafRef.current!);
+    rafRef.current = undefined;
+    clearTimeout(armTimerRef.current);
+    clearTimeout(hintTimerRef.current);
+    armedRef.current = false;
+    idleRef.current = true;
+    setProg(0);
+    setBusy(false);
+    setLabel(baseLabel);
+  }, [offered, baseLabel, setBusy, setProg]);
 
   useEffect(
     () => () => {

@@ -23,6 +23,14 @@ export interface FieldInputs {
   boosted: boolean;
   aim: RackId;
   reducedMotion: boolean;
+  /**
+   * Sim reading count. Under reduced motion the field advances
+   * REDUCED_MOTION_STEPS_PER_READING steps once per *reading*
+   * (contract/a11y-spec.md §3) — not once per setInputs call, which also
+   * fires on focus changes, actions and the like. Omitted by static callers
+   * (/states), which never tick.
+   */
+  reading?: number;
 }
 
 export interface FieldEngine {
@@ -149,6 +157,7 @@ export function createFieldEngine(canvas: HTMLCanvasElement, initialInputs: Fiel
   rafId = requestAnimationFrame(frame);
 
   function setInputs(next: FieldInputs) {
+    const prevReading = inputs.reading;
     inputs = next;
     updateFlareTriggers();
     if (!hasSettled) {
@@ -159,7 +168,9 @@ export function createFieldEngine(canvas: HTMLCanvasElement, initialInputs: Fiel
       return;
     }
     if (inputs.reducedMotion) {
-      for (let i = 0; i < REDUCED_MOTION_STEPS_PER_READING; i++) stepOnce();
+      if (inputs.reading !== prevReading) {
+        for (let i = 0; i < REDUCED_MOTION_STEPS_PER_READING; i++) stepOnce();
+      }
       draw();
     }
     // else: the continuous rAF loop above picks up the new inputs on its next tick.

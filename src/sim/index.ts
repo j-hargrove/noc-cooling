@@ -18,6 +18,7 @@ export {
   openLock,
   startIncident,
   failSecondRack,
+  setHeatLoad,
   dispatchTech,
 } from './engine';
 export type { StepResult } from './engine';

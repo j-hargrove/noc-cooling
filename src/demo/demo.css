@@ -1,0 +1,182 @@
+/*
+ * Demo harness styles (contract/components.md §9). Like src/ui/app.css,
+ * every value the contract names is a var() into tokens.generated.css or
+ * base.css; the few left literal (1px rules, the disabled opacity, the step
+ * marker weight) are the prototype's own and untokenised. Selectors mirror reference/prototype.html's "panel" section for
+ * the step-8 side-by-side check. Controls use the page accent (desaturated
+ * green, light/dark via base.css), never blue; the heat-load slider alone
+ * uses color.demo.heatSlider.
+ */
+
+/* ---------- panel ---------- */
+.panel {
+  max-width: var(--space-demo-panel-max-width);
+}
+.panel h1 {
+  margin: var(--space-demo-h1-margin);
+  font-size: var(--type-demo-h1-size);
+  line-height: var(--type-demo-h1-line-height);
+  letter-spacing: var(--type-demo-h1-letter-spacing);
+  font-variation-settings: 'wdth' var(--type-demo-h1-wdth), 'wght' var(--type-demo-h1-wght);
+}
+.panel p {
+  margin: var(--space-demo-p-margin);
+  font-size: var(--type-demo-body-size);
+  line-height: var(--type-demo-body-line-height);
+  color: var(--muted);
+}
+.ctrl {
+  margin: var(--space-demo-ctrl-margin);
+}
+.ctrl label {
+  display: flex;
+  justify-content: space-between;
+  font-size: var(--type-demo-label-size);
+  font-variation-settings: 'wdth' var(--type-demo-label-wdth), 'wght' var(--type-demo-label-wght);
+  margin-bottom: var(--space-demo-ctrl-label-margin-bottom);
+}
+.ctrl output {
+  font-variant-numeric: tabular-nums;
+  color: var(--muted);
+}
+.ctrl input[type='range'] {
+  width: 100%;
+  accent-color: var(--color-demo-heat-slider);
+}
+.btns {
+  display: flex;
+  gap: var(--space-demo-buttons-gap);
+  margin: var(--space-demo-buttons-margin);
+  flex-wrap: wrap;
+}
+.btn {
+  padding: var(--space-demo-button-padding);
+  border-radius: var(--radius-demo-button);
+  border: 1px solid var(--line);
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: var(--type-demo-button-size);
+  font-variation-settings: 'wdth' var(--type-demo-button-wdth), 'wght' var(--type-demo-button-wght);
+}
+.btn:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+.btn.primary {
+  background: var(--ink);
+  color: var(--ground);
+  border-color: transparent;
+}
+.btn:focus-visible,
+.check input:focus-visible,
+.ctrl input:focus-visible,
+.panel a:focus-visible {
+  outline: var(--focus-width) solid var(--focus-demo-color);
+  outline-offset: var(--focus-demo-offset);
+}
+.check {
+  display: flex;
+  align-items: center;
+  gap: var(--space-demo-check-gap);
+  font-size: var(--type-demo-label-size);
+  cursor: pointer;
+}
+.check-second {
+  margin-top: var(--space-demo-check-gap);
+}
+.check input {
+  width: var(--space-demo-check-box);
+  height: var(--space-demo-check-box);
+  accent-color: var(--accent);
+}
+.steps {
+  margin: var(--space-demo-steps-margin);
+  padding: 0 0 0 var(--space-demo-steps-padding-left);
+  color: var(--muted);
+  font-size: var(--type-demo-steps-size);
+  line-height: var(--type-demo-steps-line-height);
+}
+.steps li {
+  margin-bottom: var(--space-demo-step-margin-bottom);
+  padding-left: var(--space-demo-step-padding-left);
+}
+.steps li::marker {
+  color: var(--ink);
+  font-variation-settings: 'wdth' 100, 'wght' 700;
+}
+.panel h2 {
+  margin: var(--space-demo-h2-margin);
+  font-size: var(--type-demo-h2-size);
+  font-variation-settings: 'wdth' var(--type-demo-h2-wdth), 'wght' var(--type-demo-h2-wght);
+}
+.log {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  max-height: var(--space-demo-log-max-height);
+  overflow: auto;
+  border-top: 1px solid var(--line);
+}
+.log li {
+  display: grid;
+  grid-template-columns: var(--space-demo-log-columns);
+  gap: var(--space-demo-log-gap);
+  padding: var(--space-demo-log-row-padding);
+  border-bottom: 1px solid var(--line);
+  font-size: var(--type-demo-log-size);
+  line-height: var(--type-demo-log-line-height);
+}
+.log time {
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+.log .sys {
+  color: var(--muted);
+}
+.log .act span {
+  font-variation-settings: 'wdth' var(--type-demo-log-emphasis-wdth), 'wght' var(--type-demo-log-emphasis-wght);
+}
+.demo-pill,
+.to-app {
+  display: none;
+}
+
+/* ---------- mobile: the app fills the screen, the pill jumps to the panel ---------- */
+@media (max-width: 780px) {
+  .panel {
+    max-width: none;
+    padding: var(--space-demo-mobile-panel-padding);
+  }
+  .demo-pill {
+    display: block;
+    position: fixed;
+    z-index: var(--layout-z-index-demo-pill);
+    top: var(--space-demo-mobile-pill-top);
+    left: 50%;
+    transform: translateX(-50%);
+    padding: var(--space-demo-mobile-pill-padding);
+    border-radius: var(--radius-pill);
+    border: 1px solid var(--color-surface-demo-pill-border);
+    background: var(--color-surface-demo-pill-bg);
+    -webkit-backdrop-filter: var(--blur-demo-pill);
+    backdrop-filter: var(--blur-demo-pill);
+    color: var(--c-frost);
+    font-family: inherit;
+    font-size: var(--type-demo-pill-size);
+    font-variation-settings: 'wdth' var(--type-demo-pill-wdth), 'wght' var(--type-demo-pill-wght);
+    text-decoration: none;
+    transition: opacity var(--motion-demo-pill-opacity);
+  }
+  .demo-pill.off {
+    opacity: 0;
+    pointer-events: none;
+  }
+  .to-app {
+    display: inline-block;
+    margin: var(--space-demo-mobile-back-link-margin);
+    color: var(--muted);
+    font-size: var(--type-demo-back-link-size);
+  }
+}

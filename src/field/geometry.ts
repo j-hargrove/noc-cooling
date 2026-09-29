@@ -22,6 +22,20 @@ export interface Geometry {
 }
 
 /**
+ * Where a rack's centre sits within the field, as fractions (0..1) of the
+ * field's width and height. For DOM overlays positioned over the canvas
+ * (the shock rings) — pure token arithmetic, so it doesn't need an engine
+ * instance or touch the per-rack jitter's Math.random().
+ */
+export function rackCenterFraction(id: string): { fx: number; fy: number } {
+  const side = id.startsWith('B') ? 1 : 0;
+  const row = Number(id.slice(-2)) - 1;
+  const x = side ? RACK_GEOM.xRight : RACK_GEOM.xLeft;
+  const y = RACK_GEOM.yStart + row * RACK_GEOM.yStep;
+  return { fx: (x + RACK_GEOM.w / 2) / GW, fy: (y + RACK_GEOM.h / 2) / GH };
+}
+
+/**
  * The 16-rack grid and CRAC-3 footprint. Built once per field instance —
  * the layout and each rack's ambient jitter never change after mount,
  * exactly matching reference/prototype.html's module-level setup.
