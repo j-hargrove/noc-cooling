@@ -5,6 +5,7 @@ import { MULTI_RACK_OVERRIDE, ROW_WEIGHTS } from '../compose/layoutTokens';
 import {
   AFTERSHOCK_READINGS,
   FOCUS_HANDOFF_READINGS,
+  INCIDENT_HEAT_STEP,
   STAND_DOWN_READINGS,
 } from './constants';
 import type { ShownState } from './types';
@@ -20,6 +21,24 @@ import type { ShownState } from './types';
 const repoRoot = process.cwd();
 const tokens = JSON.parse(readFileSync(join(repoRoot, 'contract', 'tokens.json'), 'utf8'));
 const decisions = readFileSync(join(repoRoot, 'docs', 'decisions.md'), 'utf8');
+
+describe('the incident heat ramp is the same in the artifact, the contract and the sim', () => {
+  const prototype = readFileSync(join(repoRoot, 'reference', 'prototype.html'), 'utf8');
+
+  it('contract/tokens.json → timing.incidentHeatStep', () => {
+    expect(INCIDENT_HEAT_STEP).toBe(tokens.timing.incidentHeatStep);
+  });
+
+  it('reference/prototype.html ramps S.heat by the same step', () => {
+    const m = prototype.match(/S\.heat = Math\.min\(S\.incident, S\.heat \+ (\d+)\)/);
+    expect(m, 'heat ramp line not found in reference/prototype.html').not.toBeNull();
+    expect(Number(m![1])).toBe(INCIDENT_HEAT_STEP);
+  });
+
+  it('docs/decisions.md records the step', () => {
+    expect(decisions).toContain(`+${INCIDENT_HEAT_STEP} per reading`);
+  });
+});
 
 describe('sim constants stay in sync with contract/tokens.json', () => {
   it('the aftershock reading count matches (already reading-count-native in the prototype)', () => {

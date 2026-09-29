@@ -507,6 +507,7 @@
   --motion-reduced-crossfade-from-opacity: 0.3;
   --timing-read-interval-ms: 1500;
   --timing-sim-seconds-per-reading: 15;
+  --timing-incident-heat-step: 35;
   --timing-hold-ms: 750;
   --timing-hold-hint-revert-ms: 2000;
   --timing-keyboard-arm-window-ms: 3000;

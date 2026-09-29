@@ -29,6 +29,9 @@
 - Four locked states: calm, drifting-recovering, drifting-rising, critical.
   Offline is a rack condition, not a fifth alert state.
 - Hysteresis: 3 steady readings before any downgrade. Escalation is immediate.
+- Incident heat ramp increased from +15 to +35 per reading so escalation feels
+  immediate — first notification at ~3s rather than ~4.5s. (~3s is the floor
+  from a fresh page with the ease rate unchanged; ~1.5s if the page has idled.)
 - Unaddressed critical runs away: throttling at 35°C, shutdown at 38°C.
   A shut-down rack stops radiating heat.
 - Fixes ramp in gradually (CRAC-3 spin-up, workload drain). Fan failure degrades

@@ -1,6 +1,7 @@
 import {
   AFTERSHOCK_READINGS,
   FOCUS_HANDOFF_READINGS,
+  INCIDENT_HEAT_STEP,
   RACK_IDS,
   RAMP,
   RECOMMENDED_C,
@@ -280,7 +281,7 @@ export function advanceReading(state: SimState): StepResult {
   s.n += 1;
 
   if (s.incident != null) {
-    s.heat = Math.min(s.incident, s.heat + 15);
+    s.heat = Math.min(s.incident, s.heat + INCIDENT_HEAT_STEP);
     if (s.heat >= s.incident) s.incident = null;
   }
   if (s.secondAt != null && s.n >= s.secondAt) {

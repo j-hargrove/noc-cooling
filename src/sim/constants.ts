@@ -21,6 +21,12 @@ export const ALLOWABLE_C = 32;
 export const THROTTLE_C = 35;
 export const SHUTDOWN_C = 38;
 
+/**
+ * Heat-load points an incident adds per reading while ramping toward its
+ * target (88). Raised from 15 so escalation feels immediate (docs/decisions.md).
+ */
+export const INCIDENT_HEAT_STEP = 35;
+
 /** Escalation is immediate; a downgrade needs this many consecutive steady readings. */
 export const HYSTERESIS_READINGS = 3;
 

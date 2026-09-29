@@ -3,6 +3,32 @@ import { act, advanceReading, createInitialState, failSecondRack, override, setH
 import { withRack } from './test-support';
 import type { SimState } from './types';
 
+describe('incident heat ramp (docs/decisions.md: +35 per reading)', () => {
+  it('ramps 30 → 65 → 88 and stops at the target', () => {
+    let s = startIncident(createInitialState(530)).state;
+    const heats: number[] = [];
+    for (let i = 0; i < 4; i++) {
+      s = advanceReading(s).state;
+      heats.push(s.heat);
+    }
+    expect(heats).toEqual([65, 88, 88, 88]);
+    expect(s.incident).toBeNull();
+  });
+
+  it('first "drifting" notification lands on reading 3 from a fresh start (was 4 at +15)', () => {
+    for (const seed of [1, 7, 42, 99, 12345]) {
+      let s = startIncident(createInitialState(seed), { fromLock: true }).state;
+      let at = 0;
+      for (let n = 1; n <= 10 && !at; n++) {
+        const r = advanceReading(s); // n = 1 is the reading the Run click fires immediately
+        s = r.state;
+        if (r.events.some((e) => e.type === 'notify' && !e.critical)) at = n;
+      }
+      expect(at, `seed ${seed}`).toBe(3);
+    }
+  });
+});
+
 describe('heat-load slider (demo panel)', () => {
   it('sets the aisle heat load directly', () => {
     const s = setHeatLoad(createInitialState(501), 65);
