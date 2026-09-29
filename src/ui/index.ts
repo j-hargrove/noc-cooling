@@ -1,7 +1,7 @@
 export { Instrument } from './Instrument';
-export type { InstrumentProps } from './Instrument';
+export type { InstrumentProps, ShockCue, FocusRequest } from './Instrument';
 export { ThermalField } from './ThermalField';
-export type { ThermalFieldProps } from './ThermalField';
+export type { ThermalFieldProps, EventPillCue } from './ThermalField';
 export { QueueCard } from './QueueCard';
 export type { QueueCardProps } from './QueueCard';
 export { Readout } from './Readout';

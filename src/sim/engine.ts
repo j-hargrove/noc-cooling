@@ -1,6 +1,7 @@
 import {
   AFTERSHOCK_READINGS,
   FOCUS_HANDOFF_READINGS,
+  INCIDENT_HEAT_STEP,
   RACK_IDS,
   RAMP,
   RECOMMENDED_C,
@@ -247,6 +248,11 @@ function failSecondRackInternal(s: SimState, events: SimEvent[], opts: { headSta
     s.phaseRack = 'A-03';
     s.phaseN = s.n;
     s.ended = null;
+    // The first incident is over and this one reopens the screen: a phone
+    // that's still locked gets told straight away (reference/prototype.html
+    // failSecond → notify(a, 'rising')). Emitted unconditionally, like every
+    // notify; the UI plays it only while locked.
+    events.push({ type: 'notify', rackId: 'A-03', ...stateNotify('A-03', 'rising', a.T) });
   }
   addLog(s, events, secondRackFaultLogText, 'sys');
   const isNewAlert = s.phase === 2 && s.startN !== s.phaseN;
@@ -275,7 +281,7 @@ export function advanceReading(state: SimState): StepResult {
   s.n += 1;
 
   if (s.incident != null) {
-    s.heat = Math.min(s.incident, s.heat + 15);
+    s.heat = Math.min(s.incident, s.heat + INCIDENT_HEAT_STEP);
     if (s.heat >= s.incident) s.incident = null;
   }
   if (s.secondAt != null && s.n >= s.secondAt) {
@@ -317,8 +323,21 @@ export function advanceReading(state: SimState): StepResult {
   return { state: s, events };
 }
 
+/**
+ * A rack can take an action only while it's live and not already acted on.
+ * Guards act/override against a gesture that began while the button was
+ * offered but completed after the rack shut down (or after another path
+ * acted on it) — the prototype let that through and logged a boost on an
+ * offline rack.
+ */
+function canAct(state: SimState): boolean {
+  const m = state.racks[state.focus];
+  return !m.down && m.acted === null;
+}
+
 /** "Hold to boost CRAC-3" / "Hold to cool A-03" confirmed — the primary fix. */
 export function act(state: SimState): StepResult {
+  if (!canAct(state)) return { state, events: [] };
   const s = cloneState(state);
   const events: SimEvent[] = [];
   const id = s.focus;
@@ -338,6 +357,7 @@ export function act(state: SimState): StepResult {
 
 /** "Override and handle manually" — logged, reversible. */
 export function override(state: SimState): StepResult {
+  if (!canAct(state)) return { state, events: [] };
   const s = cloneState(state);
   const events: SimEvent[] = [];
   const id = s.focus;
@@ -430,6 +450,17 @@ export function failSecondRack(state: SimState, opts: { headStart?: boolean } = 
   const events: SimEvent[] = [];
   failSecondRackInternal(s, events, opts);
   return { state: s, events };
+}
+
+/**
+ * The demo panel's heat-load slider. Takes the aisle straight to `heat` and
+ * cancels any ramp an incident had in flight — the operator's hand on the
+ * slider wins (reference/prototype.html heatIn 'input').
+ */
+export function setHeatLoad(state: SimState, heat: number): SimState {
+  const h = Math.max(0, Math.min(100, Math.round(heat)));
+  if (state.heat === h && state.incident === null) return state;
+  return { ...state, heat: h, incident: null };
 }
 
 /** Outcome sheet primary button, once a rack is down. */

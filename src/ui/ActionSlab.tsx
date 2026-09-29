@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useRef } from 'react';
 import type { ActionSlabCopy } from '../compose/actionCopy';
 import { useHoldToConfirm } from './useHoldToConfirm';
 
@@ -13,11 +14,36 @@ export interface ActionSlabProps {
 }
 
 export function ActionSlab({ copy, onConfirm, onOverride, onUndo, onHoldBusyChange, onHoldProgressChange }: ActionSlabProps) {
+  // Focus after acting (contract/a11y-spec.md §2): a keyboard/AT confirm, or
+  // an override, puts the reversal one key away. The undo only appears once
+  // the sim reports the rack acted on, so the move waits for that render.
+  const undoRef = useRef<HTMLButtonElement>(null);
+  const focusUndoPending = useRef(false);
+  useEffect(() => {
+    if (focusUndoPending.current && copy.undoLabel !== null) {
+      focusUndoPending.current = false;
+      undoRef.current?.focus({ preventScroll: true });
+    }
+  }, [copy.undoLabel]);
+
+  const handleConfirm = useCallback(
+    (via: 'pointer' | 'keyboard') => {
+      if (via === 'keyboard') focusUndoPending.current = true;
+      onConfirm();
+    },
+    [onConfirm],
+  );
+  const handleOverride = useCallback(() => {
+    focusUndoPending.current = true;
+    onOverride();
+  }, [onOverride]);
+
   const { label, progress, handlers } = useHoldToConfirm({
     baseLabel: copy.holdLabel,
-    onConfirm,
+    onConfirm: handleConfirm,
     onBusyChange: onHoldBusyChange,
     onProgressChange: onHoldProgressChange,
+    offered: copy.offerAction,
   });
   const { calm } = copy;
 
@@ -43,10 +69,10 @@ export function ActionSlab({ copy, onConfirm, onOverride, onUndo, onHoldBusyChan
           Press and hold to confirm. With a keyboard or screen reader, activate twice.
         </span>
         <div className="row">
-          <button type="button" className="ghost" hidden={!copy.offerAction} onClick={onOverride}>
+          <button type="button" className="ghost" hidden={!copy.offerAction} onClick={handleOverride}>
             Override and handle manually
           </button>
-          <button type="button" className="ghost" hidden={copy.undoLabel === null} onClick={onUndo}>
+          <button ref={undoRef} type="button" className="ghost" hidden={copy.undoLabel === null} onClick={onUndo}>
             {copy.undoLabel}
           </button>
         </div>

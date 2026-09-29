@@ -455,7 +455,7 @@ body{ min-height:100%; background:var(--ground); color:var(--ink); font-family:v
   function reading(){
     S.n++;
     if (S.incident != null){
-      S.heat = Math.min(S.incident, S.heat + 15);
+      S.heat = Math.min(S.incident, S.heat + 35);
       $('heatIn').value = S.heat; $('heatOut').textContent = S.heat + '%';
       if (S.heat >= S.incident) S.incident = null;
     }
