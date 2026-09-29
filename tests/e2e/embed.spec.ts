@@ -179,3 +179,56 @@ test('without ?embed=1 the full page is unchanged', async ({ page }) => {
   await expect(page.locator('h1')).toHaveText('Cooling alert, critical state');
   await expect(page.locator('html')).not.toHaveClass(/embed/);
 });
+
+/**
+ * Composer feed (src/demo/layoutFeed.ts): a host page on an allowed origin
+ * receives { type: 'noc-layout', ... } messages; any other host gets none.
+ * Host pages are served by page.route() at a chosen origin; the iframe
+ * itself is the real preview server.
+ */
+async function feedHost(page: Page, hostOrigin: string) {
+  await page.setViewportSize({ width: 900, height: 924 });
+  // A routed (fulfilled) host counts as public address space, so Chromium's
+  // Local Network Access check would otherwise block the localhost iframe.
+  await page.context().grantPermissions(['local-network-access']);
+  const src = new URL('/?embed=1&seed=7&readMs=100', test.info().project.use.baseURL).toString();
+  await page.route(`${hostOrigin}/host.html`, (route) =>
+    route.fulfill({
+      contentType: 'text/html',
+      body: `<!doctype html><body style="margin:0">
+        <script>window.feed = []; addEventListener('message', (e) => { if (e.data && e.data.type === 'noc-layout') feed.push(e.data); });</script>
+        <iframe id="f" src="${src}" style="border:0;width:820px;height:844px"></iframe>
+      </body>`,
+    }),
+  );
+  await page.goto(`${hostOrigin}/host.html`);
+  const frame = page.frameLocator('#f');
+  await frame.locator('.app').first().waitFor();
+  return frame;
+}
+
+const feed = (page: Page) => page.evaluate(() => (window as unknown as { feed: { state: string; reason: string; regions: { queue: boolean } }[] }).feed);
+
+test.describe('embed composer feed', () => {
+  test('an allowed host gets the first layout, then each change with a reason', async ({ page }) => {
+    const f = await feedHost(page, 'http://localhost:4399');
+    await expect.poll(() => feed(page)).toHaveLength(1);
+    expect((await feed(page))[0]).toMatchObject({ type: 'noc-layout', state: 'calm', reason: 'initial layout: B-07 calm' });
+
+    await f.getByRole('button', { name: 'Run the incident' }).click();
+    await expect.poll(async () => (await feed(page)).map((m) => m.state), { timeout: 15_000 }).toContain('critical');
+    const msgs = await feed(page);
+    // Only changes are posted: no two consecutive messages share a state and queue.
+    for (let i = 1; i < msgs.length; i++) {
+      expect(msgs[i].reason).not.toBe('');
+      expect([msgs[i].state, msgs[i].regions.queue]).not.toEqual([msgs[i - 1].state, msgs[i - 1].regions.queue]);
+    }
+  });
+
+  test('any other host gets nothing', async ({ page }) => {
+    const f = await feedHost(page, 'https://evil.example');
+    await f.getByRole('button', { name: 'Run the incident' }).click();
+    await page.waitForTimeout(2_000); // ~20 readings at readMs=100
+    expect(await feed(page)).toEqual([]);
+  });
+});

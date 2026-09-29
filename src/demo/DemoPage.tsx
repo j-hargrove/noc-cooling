@@ -3,6 +3,7 @@ import { readLiveParams } from '../live/params';
 import { useLiveSim } from '../live/useLiveSim';
 import { Instrument } from '../ui/Instrument';
 import { DemoPill } from './DemoPill';
+import { useLayoutFeed } from './layoutFeed';
 import { Panel } from './Panel';
 import './demo.css';
 
@@ -13,7 +14,7 @@ import './demo.css';
  * the live loop only at the moment an incident starts.
  *
  * `embed` (?embed=1, wide enough): the same live app, minus page chrome —
- * see EmbedPage.
+ * see EmbedPage. Embeds also post the composer feed to their host (layoutFeed.ts).
  */
 export function DemoPage({ embed = false }: { embed?: boolean }) {
   const [params] = useState(() => readLiveParams(window.location.search));
@@ -25,7 +26,8 @@ export function DemoPage({ embed = false }: { embed?: boolean }) {
   }, [fromLock, autoSecond]);
   const getRunOptions = useCallback(() => optsRef.current, []);
 
-  const { instrumentProps, demo } = useLiveSim({ seed: params.seed, readMs: params.readMs, getRunOptions });
+  const { sim, instrumentProps, demo } = useLiveSim({ seed: params.seed, readMs: params.readMs, getRunOptions });
+  useLayoutFeed(sim, embed);
 
   return (
     <main className={embed ? 'stage embed-stage' : 'stage'}>
