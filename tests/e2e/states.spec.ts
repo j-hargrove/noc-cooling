@@ -134,6 +134,17 @@ test.describe('visual comparator catches what the old tolerance let through', ()
     expect(changed.outsideDiff).toBe(0);
   });
 
+  test('under an overlay, the blur spill is tolerated but a text change is still caught', async ({ page }) => {
+    const device = page.locator('[data-fixture="overlay-lock"] .device');
+    const field = await fieldRectWithin(device);
+    const plain = await page.locator('[data-fixture="overlay-lock"] .device .field').boundingBox();
+    const box = (await device.boundingBox())!;
+    expect(field.y).toBeLessThan(plain!.y - box.y); // grown by the lock's blur reach
+    // The notification's title sits over the blurred field: changing one character still fails.
+    const { changed } = await verdict(page, 'overlay-lock', `[data-fixture="overlay-lock"] .notif strong::after { content: '!'; }`);
+    expect(changed.outsideDiff + changed.insideOver).toBeGreaterThan(0);
+  });
+
   test('a real change inside the field still fails — tolerant, not masked', async ({ page }) => {
     const { changed } = await verdict(page, 'calm', `[data-fixture="calm"] .field canvas { filter: brightness(1.3) !important; }`);
     expect(changed.insideOver).toBeGreaterThan(0);

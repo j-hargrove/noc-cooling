@@ -118,11 +118,34 @@ export async function comparePngs(page: Page, expected: Buffer, actual: Buffer, 
   }
 }
 
-/** The field's box, relative to the element being screenshotted. */
+/**
+ * The tolerant region, relative to the element being screenshotted: the
+ * field's box — grown by the reach of any overlay that blurs it. The intro
+ * and lock screen sit over the field with `backdrop-filter: blur(Npx)`, which
+ * spreads the field's flicker beyond its own box (CI: overlay-intro, 28px at
+ * 1 level just outside it). A CSS blur of N px is a Gaussian with σ = N, so
+ * its spread is taken as 3N. Still the same per-pixel tolerance there, not a mask.
+ */
 export async function fieldRectWithin(root: Locator): Promise<Rect> {
   const [r, f] = await Promise.all([root.boundingBox(), root.locator('.field').boundingBox()]);
   if (!r || !f) throw new Error('fixture has no .field to scope the tolerance to');
-  return { x: f.x - r.x, y: f.y - r.y, width: f.width, height: f.height };
+  const blurPx = await root.evaluate((el) => {
+    let max = 0;
+    for (const o of el.querySelectorAll<HTMLElement>('.intro, .lock')) {
+      const m = /blur\(([\d.]+)px\)/.exec(getComputedStyle(o).backdropFilter || '');
+      if (m) max = Math.max(max, Number(m[1]));
+    }
+    return max;
+  });
+  const spill = 3 * blurPx;
+  const x = Math.max(0, f.x - r.x - spill);
+  const y = Math.max(0, f.y - r.y - spill);
+  return {
+    x,
+    y,
+    width: Math.min(r.width, f.x - r.x + f.width + spill) - x,
+    height: Math.min(r.height, f.y - r.y + f.height + spill) - y,
+  };
 }
 
 /**
