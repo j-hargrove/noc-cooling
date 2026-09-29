@@ -271,68 +271,10 @@
 .app[data-state='critical'] .field {
   transform: var(--motion-field-tilt-transform);
 }
-.field canvas,
-.field-viewport {
+.field canvas {
   display: block;
   width: 100%;
   height: 100%;
-}
-.field-rack {
-  fill: var(--color-field-rack-fill);
-  stroke: var(--color-field-rack-stroke-calm);
-  stroke-width: var(--stroke-field-rack-calm);
-  /* the field's viewBox is in grid units, not px — without this, every
-     stroke-width above scales up with it (also set as a JSX attribute in
-     ThermalField.tsx as a belt-and-suspenders; CSS wins where both apply,
-     they're kept identical on purpose). */
-  vector-effect: non-scaling-stroke;
-}
-.field-rack[data-alert='1'] {
-  stroke-width: var(--stroke-field-rack-alert);
-}
-.field-rack[data-focused='1'] {
-  stroke-width: var(--stroke-field-rack-focused);
-}
-.field-rack[data-down='1'] {
-  fill: var(--color-field-rack-down-fill);
-  stroke: var(--color-field-rack-down-stroke);
-  stroke-width: var(--stroke-field-rack-down);
-  stroke-dasharray: 3 3;
-}
-.field-rack-label {
-  fill: var(--color-field-rack-label-calm);
-  font-family: var(--font);
-  /* No wdth: contract/tokens.json's fieldCanvas.rackLabel has no wdth entry,
-     matching reference/prototype.html's own ctx.font string (`"${weight}
-     ${size}px Archivo, sans-serif"`), which never sets a stretch/width axis
-     either — this renders at Archivo's default width in both places. */
-  font-variation-settings: 'wght' var(--type-field-canvas-rack-label-wght-calm);
-}
-.field-rack-label[data-alert='1'] {
-  font-variation-settings: 'wght' var(--type-field-canvas-rack-label-wght-alert);
-}
-.field-rack-label[data-down='1'] {
-  fill: var(--color-field-rack-down-stroke);
-}
-.field-crac {
-  fill: var(--color-field-crac-fill);
-  stroke: var(--color-field-crac-stroke-idle);
-  stroke-width: var(--stroke-field-crac-idle);
-  vector-effect: non-scaling-stroke;
-}
-.field-crac[data-boosted='1'] {
-  stroke: var(--color-field-crac-stroke-boosted);
-  stroke-width: var(--stroke-field-crac-boosted);
-}
-.field-crac-label {
-  fill: var(--color-field-crac-ink-idle);
-  font-family: var(--font);
-  /* No wdth — see .field-rack-label above; same reasoning, same source (contract/tokens.json's fieldCanvas.crac). */
-  font-variation-settings: 'wght' var(--type-field-canvas-crac-wght-idle);
-}
-.field-crac-label[data-boosted='1'] {
-  fill: var(--color-field-crac-ink-boosted);
-  font-variation-settings: 'wght' var(--type-field-canvas-crac-wght-boosted);
 }
 .shock {
   position: absolute;

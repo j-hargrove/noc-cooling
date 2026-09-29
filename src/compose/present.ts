@@ -7,6 +7,7 @@ import { composeScreen } from './composeScreen';
 import { composeOutcome } from './outcomeCopy';
 import { computeProjection } from './projection';
 import { focusedView, queueEntries, toRackView } from './rackView';
+import { resolveAim } from '../sim/selectors';
 
 /** The lock screen's notification content (contract/components.md §7). */
 export interface LockNotification {
@@ -76,7 +77,11 @@ export function presentInstrument(state: SimState, handlers: InstrumentHandlers,
     clock: fmt(state.clock),
     fieldRacks,
     boosted: state.boosted,
-    aim: state.lastAim,
+    // resolveAim(), not the raw state.lastAim: lastAim starts null until the
+    // first reading runs resolveAim internally (src/sim/engine.ts), so a
+    // state that's never been ticked (several /states fixtures) would
+    // otherwise hand the field a null aim instead of the resolved default.
+    aim: resolveAim(state).aim,
     focusedRack,
     queue: queueEntries(state),
     onSelectRack: handlers.onSelectRack,

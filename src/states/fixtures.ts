@@ -63,6 +63,18 @@ function criticalHolding(): Fixture {
   return { id: 'critical-holding', label: 'Critical, hold in progress', description: 'The projection path mid-confirm: what happens with the fix vs. without it.', state, holdProgress: 0.5 };
 }
 
+function criticalBoosted(): Fixture {
+  // None of the other fixtures leave S.boosted true in their final snapshot
+  // (the plain states never act; the outcome fixtures stand CRAC-3 back
+  // down by resolution) — without this one, the boosted CRAC-3 streamlines
+  // (steered into the aimed rack's intake, 16 lines instead of 8) would
+  // never appear anywhere in the baseline set.
+  let state = withRack(base(8), 'B-07', { T: 34.5, slope: 0.01, state: 'critical' });
+  state = act(state).state; // confirms the hold: acted='fix', boosted=true
+  state = run(state, 2); // the fix begins landing while still hot
+  return { id: 'critical-boosted', label: 'Critical, CRAC-3 boosted', description: 'Confirmed: CRAC-3 aimed at B-07, fix landing.', state };
+}
+
 function offline(): Fixture {
   const state = withRack(base(6), 'B-07', { T: 26.5, slope: -0.3, state: 'critical', down: true, downAt: '02:19:15', critAt: 8000, peak: 39.4, thr: 6 });
   return { id: 'offline', label: 'Offline', description: 'Shut down at 38°C; cooling toward ambient, radiating nothing further.', state };
@@ -134,6 +146,7 @@ export function buildFixtures(): Fixture[] {
     rising(),
     critical(),
     criticalHolding(),
+    criticalBoosted(),
     offline(),
     multiRack(),
     manualOverride(),

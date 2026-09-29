@@ -2,9 +2,22 @@ import { expect, test } from '@playwright/test';
 
 /**
  * Visual baselines for every fixture on /states (docs/BUILD_BRIEF.md step 4).
- * Each fixture is built from a deterministic, seeded SimState (src/states/fixtures.ts)
- * and nothing here is animated or ticking, so these screenshots are expected to be
- * byte-stable across runs — a diff means either a real visual regression or a
+ * Each fixture is built from a deterministic, seeded SimState (src/states/fixtures.ts).
+ *
+ * The thermal field (src/field) is a genuine live canvas now (step 5): a
+ * continuous rAF loop, plume noise from Math.random(), and time-based
+ * streamline dash animation. None of that is reproducible screenshot to
+ * screenshot on its own — freezing it is the test's job, not the app's
+ * (the app should look like reference/prototype.html, noise and all). Two
+ * mocks, installed before the page loads:
+ *  - Math.random() is replaced with a fixed-seed LCG, so plume texture is
+ *    identical every run (it's consumed synchronously during the field's
+ *    initial 400-step settle, before either mock below would matter).
+ *  - page.clock freezes time at 0, so requestAnimationFrame callbacks never
+ *    fire again after the initial mount (the field settles once and stays
+ *    on that frame) and the streamline dash offset (a function of
+ *    performance.now()) is pinned to a fixed position.
+ * A diff past that setup means either a real visual regression or a
  * deliberate change that needs a new approved baseline (`--update-snapshots`).
  *
  * Scoped to each fixture's `.device` frame, not the whole page: the verification
@@ -16,6 +29,7 @@ const FIXTURE_IDS = [
   'rising',
   'critical',
   'critical-holding',
+  'critical-boosted',
   'offline',
   'multi-rack',
   'manual-override',
@@ -29,6 +43,23 @@ const FIXTURE_IDS = [
 
 test.describe('/states visual baselines', () => {
   test.beforeEach(async ({ page }) => {
+    // page.clock FIRST: it installs its own performance.now() patch (based
+    // on real elapsed wall-clock time, confirmed by direct measurement — it
+    // does NOT freeze at 0 the way Date/setTimeout do), and our override
+    // below must be registered after it to win. Init scripts run in
+    // registration order on each navigation, so this order is load-bearing.
+    await page.clock.install({ time: 0 });
+    await page.addInitScript(() => {
+      let seed = 42;
+      Math.random = () => {
+        seed = (seed * 1103515245 + 12345) & 0x7fffffff;
+        return seed / 0x7fffffff;
+      };
+      // The streamline dash offset is a direct function of performance.now();
+      // boosted streamlines amplify any drift in it by ~90x, idle ones by
+      // ~28x — which is why only the boosted fixture visibly showed it.
+      performance.now = () => 0;
+    });
     await page.goto('/states');
     // Web fonts loading after first paint would shift text metrics between
     // runs/environments — wait for Archivo before any screenshot.

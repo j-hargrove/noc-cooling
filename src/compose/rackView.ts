@@ -15,6 +15,10 @@ export interface RackView {
   down: boolean;
   tempC: number;
   ratePerMin: number;
+  /** Raw slope (°C/reading) — ratePerMin's un-derived form. The field's plume spread reads this directly, matching reference/prototype.html. */
+  slope: number;
+  /** The sim's one-shot trigger flag (set on incident start / second-rack fault, cleared on shutdown). The field owns its own decaying visual pulse from this — see src/field/engine.ts. */
+  flare: number;
   stable: 0 | 1 | 2 | 3;
   acted: ActedAs;
   actedAt: string;
@@ -32,6 +36,8 @@ export function toRackView(state: SimState, id: RackId): RackView {
     down: m.down,
     tempC: m.T,
     ratePerMin: m.slope * (60 / SIM_SECONDS_PER_READING),
+    slope: m.slope,
+    flare: m.flare,
     stable: Math.min(3, m.stable) as 0 | 1 | 2 | 3,
     acted: m.acted,
     actedAt: m.actAt,
