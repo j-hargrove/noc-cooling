@@ -11,8 +11,11 @@ import './demo.css';
  * the demo harness (docs/BUILD_BRIEF.md: src/demo wraps the product and is
  * never imported by src/ui). The two checkboxes are harness state, read by
  * the live loop only at the moment an incident starts.
+ *
+ * `embed` (?embed=1, wide enough): the same live app, minus page chrome —
+ * see EmbedPage.
  */
-export function DemoPage() {
+export function DemoPage({ embed = false }: { embed?: boolean }) {
   const [params] = useState(() => readLiveParams(window.location.search));
   const [fromLock, setFromLock] = useState(true);
   const [autoSecond, setAutoSecond] = useState(true);
@@ -25,17 +28,18 @@ export function DemoPage() {
   const { instrumentProps, demo } = useLiveSim({ seed: params.seed, readMs: params.readMs, getRunOptions });
 
   return (
-    <main className="stage">
+    <main className={embed ? 'stage embed-stage' : 'stage'}>
       <div className="device" id="app">
         <Instrument {...instrumentProps} />
       </div>
-      <DemoPill targetId="app" />
+      {!embed && <DemoPill targetId="app" />}
       <Panel
         {...demo}
         fromLock={fromLock}
         autoSecond={autoSecond}
         onToggleFromLock={setFromLock}
         onToggleAutoSecond={setAutoSecond}
+        variant={embed ? 'controls' : 'full'}
       />
     </main>
   );
