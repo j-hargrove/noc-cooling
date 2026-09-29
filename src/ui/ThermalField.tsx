@@ -28,6 +28,8 @@ export interface ThermalFieldProps {
   /** Sim reading count — paces the reduced-motion field (see FieldInputs.reading). */
   reading?: number;
   event?: EventPillCue | null;
+  /** Render one settled frame and never animate — for a static picture of the app (the narrow-embed preview). */
+  still?: boolean;
 }
 
 const MODELED: readonly RackId[] = ['B-07', 'A-03'];
@@ -71,10 +73,11 @@ function EventPill({ cue }: { cue: EventPillCue | null | undefined }) {
   );
 }
 
-export function ThermalField({ racks, focus, boosted, aim, reading, event }: ThermalFieldProps) {
+export function ThermalField({ racks, focus, boosted, aim, reading, event, still = false }: ThermalFieldProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const engineRef = useRef<FieldEngine | null>(null);
-  const reducedMotion = usePrefersReducedMotion();
+  // Still is reduced motion's field behaviour: no per-frame loop, no dash scroll.
+  const reducedMotion = usePrefersReducedMotion() || still;
 
   // One engine per mount — imperative and isolated (docs/BUILD_BRIEF.md),
   // driven by the props below via setInputs, not recreated on every render.

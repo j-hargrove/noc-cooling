@@ -1,0 +1,88 @@
+/*
+ * Embed mode (?embed=1). main.tsx puts `embed` on <html> before first
+ * render, so the page never paints its own ground inside the host's iframe.
+ */
+:root.embed,
+:root.embed body {
+  background: transparent;
+}
+/* Match the host's colour scheme (?theme=, see embed.ts): a mismatch makes
+   the browser paint an opaque canvas behind the iframe. */
+:root.embed[data-embed-scheme='light'] {
+  color-scheme: light;
+}
+:root.embed[data-embed-scheme='dark'] {
+  color-scheme: dark;
+}
+:root.embed[data-embed-scheme='auto'] {
+  color-scheme: light dark;
+}
+
+/* ---------- wide: live phone + controls, filling the frame ---------- */
+.stage.embed-stage {
+  min-height: 100vh;
+  padding: 0;
+  gap: calc(var(--space-stage-gap) * 2 / 3);
+}
+/* Fit the frame's height rather than overflow it; the app's layout is
+   already built to flex vertically (cqh type, fr rows), as it does on a phone. */
+.embed-stage .device {
+  height: max(var(--space-demo-mobile-device-min-height), min(calc(var(--meta-device-height) * 1px), 100vh));
+}
+.embed-stage .panel {
+  max-height: 100vh;
+  overflow: auto;
+}
+.embed-stage .panel .ctrl {
+  margin-top: 0;
+}
+
+/* ---------- narrow: a still frame and a way out ---------- */
+.embed-preview {
+  box-sizing: border-box;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  overflow: hidden;
+}
+.embed-preview-frame {
+  flex: none;
+  position: relative;
+}
+/* The preview is always below the breakpoint, where app.css flattens the
+   device to a full-screen app. Put the phone back: it's a picture of one. */
+.embed-preview-frame .device {
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform-origin: 0 0;
+  width: calc(var(--meta-device-width) * 1px);
+  height: calc(var(--meta-device-height) * 1px);
+  min-height: 0;
+  padding: var(--space-device-padding);
+  border-radius: var(--radius-device);
+  background: var(--color-surface-device);
+  box-shadow: var(--shadow-device);
+}
+.embed-preview .app {
+  border-radius: var(--radius-app);
+}
+/* The host page's ground is unknown: the link carries its own (the app's), so it reads on any of them. */
+.embed-open {
+  flex: none;
+  padding: 10px 18px;
+  border-radius: var(--radius-pill);
+  background: var(--c-ground);
+  color: var(--c-frost);
+  border: 1px solid var(--color-surface-demo-pill-border);
+  font-size: var(--type-demo-button-size);
+  font-variation-settings: 'wdth' var(--type-demo-button-wdth), 'wght' var(--type-demo-button-wght);
+  text-decoration: none;
+}
+.embed-open:focus-visible {
+  outline: var(--focus-width) solid var(--focus-intro-color);
+  outline-offset: var(--focus-intro-offset);
+}

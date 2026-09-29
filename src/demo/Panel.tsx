@@ -13,6 +13,12 @@ export interface PanelProps {
   onReset: () => void;
   onToggleFromLock: (v: boolean) => void;
   onToggleAutoSecond: (v: boolean) => void;
+  /**
+   * 'controls' (embed mode) drops the page chrome — back link, heading,
+   * framing paragraph and "Try it" steps, which the host page supplies —
+   * and keeps the controls and the action log.
+   */
+  variant?: 'full' | 'controls';
 }
 
 /**
@@ -34,23 +40,29 @@ export function Panel({
   onReset,
   onToggleFromLock,
   onToggleAutoSecond,
+  variant = 'full',
 }: PanelProps) {
+  const chrome = variant === 'full';
   return (
-    <aside className="panel" id="panel">
-      <a className="to-app" href="#app">
-        Back to the app
-      </a>
-      <h1>Cooling alert, critical state</h1>
-      <p>
-        A working prototype, not a mockup. The sensor feed is simulated and time runs ten times fast. The state logic, hysteresis,
-        action log and screen reader announcements are real.
-      </p>
-      <ol className="steps">
-        <li>Run the incident, then tap the alert on the lock screen.</li>
-        <li>Hold the button to cool the rack, and watch the air follow.</li>
-        <li>Or do nothing, and watch it fail.</li>
-        <li>Stay for the second rack.</li>
-      </ol>
+    <aside className="panel" id="panel" aria-label={chrome ? undefined : 'Demo controls'}>
+      {chrome && (
+        <>
+          <a className="to-app" href="#app">
+            Back to the app
+          </a>
+          <h1>Cooling alert, critical state</h1>
+          <p>
+            A working prototype, not a mockup. The sensor feed is simulated and time runs ten times fast. The state logic, hysteresis,
+            action log and screen reader announcements are real.
+          </p>
+          <ol className="steps">
+            <li>Run the incident, then tap the alert on the lock screen.</li>
+            <li>Hold the button to cool the rack, and watch the air follow.</li>
+            <li>Or do nothing, and watch it fail.</li>
+            <li>Stay for the second rack.</li>
+          </ol>
+        </>
+      )}
       <div className="ctrl">
         <label htmlFor="heatIn">
           Heat load in aisle 4 <output htmlFor="heatIn">{heatLoad}%</output>

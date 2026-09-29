@@ -85,6 +85,8 @@ export interface InstrumentProps {
   /** The outcome sheet is dropping away because an aftershock reopened the incident (motion.outcomeOut). */
   outcomeLeaving?: boolean;
   focusRequest?: FocusRequest | null;
+  /** A static picture of the app: nothing moves, nothing is interactive (the narrow-embed preview). */
+  still?: boolean;
 }
 
 export function Instrument({
@@ -124,6 +126,7 @@ export function Instrument({
   lockOpening = false,
   outcomeLeaving = false,
   focusRequest,
+  still = false,
 }: InstrumentProps) {
   const { weights } = layout;
   const appRef = useRef<HTMLDivElement>(null);
@@ -198,7 +201,7 @@ export function Instrument({
       data-state={layout.shown}
       data-multi={layout.multiRack ? '1' : '0'}
       data-outcome={layout.outcome ?? undefined}
-      data-motion={reducedMotion ? 'reduced' : 'full'}
+      data-motion={reducedMotion || still ? 'reduced' : 'full'}
     >
       <header className="bar" inert={covered}>
         <div>
@@ -217,7 +220,7 @@ export function Instrument({
         inert={covered}
         style={{ gridTemplateRows: `${weights.field} ${weights.queue} ${weights.readout} ${weights.action}` }}
       >
-        <ThermalField racks={fieldRacks} focus={focusedRack.id} boosted={boosted} aim={aim} reading={beat} event={eventPill} />
+        <ThermalField racks={fieldRacks} focus={focusedRack.id} boosted={boosted} aim={aim} reading={beat} event={eventPill} still={still} />
 
         {/* Always present (even empty): the grid's row weights, not DOM presence, collapse this
             to 0fr when there's nothing queued — same as the prototype. Removing it here would
