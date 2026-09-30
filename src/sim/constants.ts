@@ -8,7 +8,11 @@ import type { AlertState, RackId } from './types';
  * asserts these can't silently drift from it.
  */
 
-export const OPERATOR = 'J. Hargrove';
+/**
+ * Who acted, in the log and status lines. The demo's visitor is the operator,
+ * so actions are theirs: "CRAC-3 fan boosted to 100% by you".
+ */
+export const OPERATOR = 'you';
 
 /** Hall B, cold aisle 4 — the authored scenario opens at 2:13 AM. */
 export const START_CLOCK_S = 2 * 3600 + 13 * 60;

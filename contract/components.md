@@ -263,7 +263,7 @@ to decide — the surface appearing *is* the escalation cue.
 - **Status line** after acting, with a leading check when the fix is applied:
   `CRAC-3 spinning up, 34%. Logged at 02:14:15.` → `CRAC-3 at 100% since
   02:14:15. Inlet should start falling within a minute. Logged.` Manual control
-  reads `Manual control of B-07 by J. Hargrove since 02:14:15. Logged.`
+  reads `Manual control of B-07 by you since 02:14:15. Logged.`
 - **Ghost row:** `Override and handle manually` (while an action is offered) and
   an undo — `Revert boost` / `Revert cooling` / `Resume recommendations`
   (whenever the rack has been acted on). Override is manual control: logged and
