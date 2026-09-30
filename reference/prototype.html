@@ -391,7 +391,7 @@ body{ min-height:100%; background:var(--ground); color:var(--ink); font-family:v
     offline:'<path d="M6 4.8a7 7 0 1 0 8 0" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><path d="M10 2v7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>',
     resolved:'<circle cx="10" cy="10" r="8.5" fill="currentColor"/><path d="m6 10.2 2.7 2.7L14 7.5" fill="none" stroke="#0F2432" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>'
   };
-  const OPERATOR = 'J. Hargrove';
+  const OPERATOR = 'you';
   const READ_MS = 1500, SIM_S = 15;
   const fmt = s => [Math.floor(s/3600)%24, Math.floor(s/60)%60, s%60].map(n => String(n).padStart(2,'0')).join(':');
   const clamp = (v,a,b) => Math.max(a, Math.min(b, v));
@@ -843,7 +843,7 @@ body{ min-height:100%; background:var(--ground); color:var(--ink); font-family:v
   });
   $('undo').addEventListener('click', () => {
     const m = focused();
-    if (m.acted === 'manual') addLog(`${OPERATOR} resumed recommendations for ${m.id}`, 'act');
+    if (m.acted === 'manual') addLog(`You resumed recommendations for ${m.id}`, 'act');
     else if (m.id === 'B-07'){ S.boosted = false; addLog(`CRAC-3 boost reverted by ${OPERATOR}`, 'act'); }
     else { S.boosted = M['B-07'].acted === 'fix'; addLog(`A-03 cooling reverted by ${OPERATOR}`, 'act'); }
     m.acted = null;

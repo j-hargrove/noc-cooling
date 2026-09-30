@@ -17,6 +17,9 @@ const STATE_PHRASE: Record<AlertState, string> = {
 
 const fmt1 = (t: number) => t.toFixed(1);
 
+/** OPERATOR opening a sentence: "You took…", not "you took…". */
+const OPERATOR_START = OPERATOR[0].toUpperCase() + OPERATOR.slice(1);
+
 export const stateChangeLogText = (id: RackId, t: AlertState) => `${id} changed to ${STATE_PHRASE[t]}`;
 
 export function stateChangeAnnouncement(id: RackId, t: AlertState, temp: number): { urgency: 'polite' | 'assertive'; message: string } {
@@ -58,7 +61,7 @@ export const overrideLogText = (id: RackId) => `Override: ${OPERATOR} took manua
 export const overrideAnnouncement = (id: RackId) => `Override logged. Manual control of ${id}.`;
 
 export function undoLogText(id: RackId, wasManual: boolean): string {
-  if (wasManual) return `${OPERATOR} resumed recommendations for ${id}`;
+  if (wasManual) return `${OPERATOR_START} resumed recommendations for ${id}`;
   return id === 'B-07' ? `CRAC-3 boost reverted by ${OPERATOR}` : `A-03 cooling reverted by ${OPERATOR}`;
 }
 

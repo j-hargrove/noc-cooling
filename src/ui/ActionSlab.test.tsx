@@ -26,7 +26,7 @@ describe('ActionSlab status line', () => {
   });
 
   it('an override does not slide in — the prototype only flags a fix as fresh', () => {
-    const { container } = render(<ActionSlab copy={acted(false, 'Manual control of B-07 by J. Hargrove since 02:14:30. Logged.')} onConfirm={() => {}} onOverride={() => {}} onUndo={() => {}} />);
+    const { container } = render(<ActionSlab copy={acted(false, 'Manual control of B-07 by you since 02:14:30. Logged.')} onConfirm={() => {}} onOverride={() => {}} onUndo={() => {}} />);
     expect(container.querySelector('.status')!.className).toBe('status');
   });
 });

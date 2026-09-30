@@ -1,10 +1,14 @@
-# Decisions: NOC Cooling Alert, Stage 1
+# Decisions: NOC Cooling Alert, Stage 2
 
 ## Process
 - Proposer was a published claude.ai artifact built through conversation
   (not Claude Design as originally framed). reference/prototype.html is its output.
 - Claude Code is the Committer. The contract (tokens + component contracts) is
   the source of truth between them.
+- Stages: Stage 1 is the working prototype (reference/prototype.html). Stage 2
+  is this production app, with the rules-based composer. Stage 3 is the
+  generative composer (not built yet). Renumbered: earlier notes called the
+  generative composer Stage 2 and this file Stage 1.
 
 ## Direction
 - "Thermal Instrument": instrument-grade layout, dark UI, live thermal map as the
@@ -47,6 +51,10 @@
   plus workload shift).
 - Outcomes: resolved, rack(s) shut down, partial (recovered with a rack offline).
 - Override = manual control: logged, reversible. No expiry/audit modeling (scope).
+- Actions are attributed to "you", not a named operator: the visitor is the one
+  acting ("CRAC-3 fan boosted to 100% by you", "Manual control of B-07 by you
+  since 02:14:30"). Capitalised when it opens a sentence ("You resumed…").
+  The artifact credits "you" too, so reference/prototype.html was updated to match.
 - Celsius (ASHRAE thresholds: 27°C recommended, 32°C allowable).
 - Reduced motion follows the OS setting only; no in-page toggle.
 - Hold-to-confirm for primary actions; double activation for keyboard/AT.
