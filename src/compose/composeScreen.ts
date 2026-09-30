@@ -23,7 +23,7 @@ export interface LayoutSpec {
 }
 
 /**
- * Rules-based now; Stage 2 swaps in a generative composer behind this same
+ * Rules-based now; Stage 3 swaps in a generative composer behind this same
  * signature (docs/BUILD_BRIEF.md). Pure and total: every SimState maps to
  * exactly one LayoutSpec, with no reference to the DOM, the clock, or
  * anything outside the state passed in.
