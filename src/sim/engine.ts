@@ -308,7 +308,12 @@ export function advanceReading(state: SimState): StepResult {
     if (m.down) continue;
     m.peak = Math.max(m.peak, m.T);
     if (m.T >= THROTTLE_C) m.thr += 1;
-    if (m.T >= SHUTDOWN_C && s.ended !== 'ok') {
+    // Unconditional, whatever the incident phase: hardware protection doesn't
+    // wait on the demo's bookkeeping. (The prototype gates this on
+    // `ended !== 'ok'`; a rack that heats after an "ok" resolution — a second
+    // rack failed just before it, or the heat load pushed up after — then
+    // throttled on past 38°C forever. See engine.shutdown-invariant.test.ts.)
+    if (m.T >= SHUTDOWN_C) {
       shutdownRackInternal(s, events, id);
       continue;
     }
