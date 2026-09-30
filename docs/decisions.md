@@ -1,10 +1,14 @@
-# Decisions: NOC Cooling Alert, Stage 1
+# Decisions: NOC Cooling Alert, Stage 2
 
 ## Process
 - Proposer was a published claude.ai artifact built through conversation
   (not Claude Design as originally framed). reference/prototype.html is its output.
 - Claude Code is the Committer. The contract (tokens + component contracts) is
   the source of truth between them.
+- Stages: Stage 1 is the working prototype (reference/prototype.html). Stage 2
+  is this production app, with the rules-based composer. Stage 3 is the
+  generative composer (not built yet). Renumbered: earlier notes called the
+  generative composer Stage 2 and this file Stage 1.
 
 ## Direction
 - "Thermal Instrument": instrument-grade layout, dark UI, live thermal map as the

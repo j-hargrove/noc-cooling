@@ -28,7 +28,7 @@ Save the following as docs/decisions.md, verbatim. Treat it as binding.
                 given a seed. Prototype setTimeouts (stand-down, focus hand-off,
                 aftershock) become sim events driven by reading count.
 - src/compose/  composeScreen(simState) -> LayoutSpec: which regions show and
-                their row weights. Rules-based now; Stage 2 swaps in a generative
+                their row weights. Rules-based now; Stage 3 swaps in a generative
                 composer behind the same signature.
 - src/field/    Canvas thermal field, plumes, heat caps, CRAC-3 streamlines.
                 Imperative, isolated, driven by sim state via a ref. Pauses when
