@@ -47,6 +47,10 @@
   plus workload shift).
 - Outcomes: resolved, rack(s) shut down, partial (recovered with a rack offline).
 - Override = manual control: logged, reversible. No expiry/audit modeling (scope).
+- Actions are attributed to "you", not a named operator: the visitor is the one
+  acting ("CRAC-3 fan boosted to 100% by you", "Manual control of B-07 by you
+  since 02:14:30"). Capitalised when it opens a sentence ("You resumed…").
+  reference/prototype.html keeps its original "J. Hargrove".
 - Celsius (ASHRAE thresholds: 27°C recommended, 32°C allowable).
 - Reduced motion follows the OS setting only; no in-page toggle.
 - Hold-to-confirm for primary actions; double activation for keyboard/AT.

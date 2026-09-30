@@ -89,7 +89,7 @@ test.describe('live app', () => {
 
     await expect(page.locator('.status')).toContainText('CRAC-3');
     await expect(page.getByRole('dialog')).toContainText('Incident resolved', { timeout: 20_000 });
-    await expect(page.locator('.log')).toContainText('CRAC-3 fan boosted to 100% by J. Hargrove');
+    await expect(page.locator('.log')).toContainText('CRAC-3 fan boosted to 100% by you');
     await expect(page.locator('.log')).toContainText('CRAC-3 returned to 60% after resolution', { timeout: 5_000 });
     await page.getByRole('button', { name: 'Done' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
@@ -119,7 +119,7 @@ test.describe('live app', () => {
     await expect(page.locator('.app')).toHaveAttribute('data-outcome', 'fail');
     await sheet.getByRole('button', { name: 'Dispatch on-site tech' }).click();
     await expect(sheet.getByRole('button', { name: 'Tech dispatched, logged' })).toBeDisabled();
-    await expect(page.locator('.log')).toContainText('On-site tech dispatched to B-07 by J. Hargrove');
+    await expect(page.locator('.log')).toContainText('On-site tech dispatched to B-07 by you');
   });
 
   test('announcements reach the live regions', async ({ page }) => {
