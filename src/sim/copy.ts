@@ -80,7 +80,10 @@ export function resolvedMixedAnnouncement(recoveredId: RackId, downIds: RackId[]
   return `Rack ${recoveredId} recovered. ${downIds.join(' and ')} still offline.`;
 }
 
-export const standDownLogText = 'CRAC-3 returned to 60% after resolution';
+export const standDownLogText = 'CRAC-3 returned to 60%';
+export function standDownOfflineLogText(offlineIds: RackId[]): string {
+  return `CRAC-3 returned to 60%: ${offlineIds.join(' and ')} offline`;
+}
 export const standDownEventPill = 'CRAC-3 back to 60%';
 
 export function dispatchLogText(downIds: RackId[]): string {

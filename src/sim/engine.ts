@@ -36,6 +36,7 @@ import {
   shutdownNotify,
   standDownEventPill,
   standDownLogText,
+  standDownOfflineLogText,
   stateChangeAnnouncement,
   stateChangeLogText,
   stateNotify,
@@ -158,12 +159,9 @@ function evaluateInternal(s: SimState, events: SimEvent[], id: RackId) {
 }
 
 /** Scheduling side effects that follow any outcome (docs/decisions.md). */
-function scheduleFollowOn(s: SimState, kind: Outcome) {
+function scheduleFollowOn(s: SimState) {
   if (s.phase === 1 && s.autoSecond && !s.racks['A-03'].fault) {
     s.secondAt = s.n + AFTERSHOCK_READINGS;
-  }
-  if ((kind === 'ok' || kind === 'mixed') && s.boosted) {
-    s.standDownAt = s.n + STAND_DOWN_READINGS;
   }
 }
 
@@ -179,7 +177,7 @@ function shutdownRackInternal(s: SimState, events: SimEvent[], id: RackId) {
   if (s.focus !== id) switchFocusInternal(s, id);
   events.push({ type: 'notify', rackId: id, ...shutdownNotify(id) });
   events.push({ type: 'outcome', kind: 'fail', rackId: id });
-  scheduleFollowOn(s, 'fail');
+  scheduleFollowOn(s);
 }
 
 function checkResolvedInternal(s: SimState, events: SimEvent[]) {
@@ -201,7 +199,7 @@ function checkResolvedInternal(s: SimState, events: SimEvent[]) {
     announce(events, 'polite', resolvedMixedAnnouncement(pr.id, downIds));
   }
   events.push({ type: 'outcome', kind, rackId: pr.id });
-  scheduleFollowOn(s, kind);
+  scheduleFollowOn(s);
 }
 
 function applyScheduledHandoff(s: SimState) {
@@ -214,18 +212,44 @@ function applyScheduledHandoff(s: SimState) {
   if (nx && s.focus === fromId && !s.holdBusy) switchFocusInternal(s, nx.id);
 }
 
+/**
+ * The racks holding CRAC-3's boost: every rack the fix was applied to. The
+ * boost is theirs, so it ends on their terms — once each has settled back to
+ * calm or shut down — whatever any other rack or the incident outcome is
+ * doing (docs/decisions.md).
+ */
+function boostHolders(s: SimState) {
+  return RACK_IDS.map((id) => s.racks[id]).filter((m) => m.acted === 'fix');
+}
+const boostSettled = (s: SimState) => boostHolders(s).every((m) => m.down || m.state === 'calm');
+
 function applyScheduledStandDown(s: SimState, events: SimEvent[]) {
-  if (s.standDownAt == null || s.n < s.standDownAt) return;
-  s.standDownAt = null;
-  // Re-checked at fire time: a lot can change in two readings (docs/decisions.md
-  // "unaddressed critical runs away") — an aftershock may have reopened things.
-  if (!s.boosted || !s.ended || s.ended === 'fail') return;
+  if (s.standDownAt != null && s.n >= s.standDownAt) {
+    s.standDownAt = null;
+    // Re-checked at fire time: someone may have reverted the boost, or a
+    // second rack taken it on, in the two readings since it was scheduled.
+    // Not settled yet → it's rescheduled below once it is.
+    if (s.boosted && boostSettled(s)) standDownInternal(s, events);
+  }
+  if (s.boosted && s.standDownAt == null && boostSettled(s)) {
+    s.standDownAt = s.n + STAND_DOWN_READINGS;
+  }
+}
+
+function standDownInternal(s: SimState, events: SimEvent[]) {
   s.boosted = false;
-  s.heat = 30;
-  s.incident = null;
+  const offline = boostHolders(s).filter((m) => m.down).map((m) => m.id);
+  if (offline.length) {
+    // A holder went offline: the boost lets go, but the aisle's heat load
+    // isn't the boost's to reset.
+    addLog(s, events, standDownOfflineLogText(offline), 'sys');
+  } else {
+    s.heat = 30;
+    s.incident = null;
+    addLog(s, events, standDownLogText, 'sys');
+  }
   const b = s.racks['B-07'];
-  if (b.acted === 'fix') b.acted = null;
-  addLog(s, events, standDownLogText, 'sys');
+  if (b.acted === 'fix' && !b.down) b.acted = null;
   eventPill(events, standDownEventPill, true);
   events.push({ type: 'stand-down' });
 }

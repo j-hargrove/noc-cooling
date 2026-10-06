@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { RAMP, SECOND_RACK_HEAD_START_FAULT_LVL } from './constants';
 import { act, advanceReading, createInitialState, failSecondRack, switchFocus, undo } from './engine';
+import { withRack } from './test-support';
 
 describe('fixes ramp in gradually (docs/decisions.md)', () => {
   it("B-07's boost lands over several readings, not instantly", () => {
@@ -16,9 +17,16 @@ describe('fixes ramp in gradually (docs/decisions.md)', () => {
   });
 
   it("B-07's boost caps at fully landed and holds there", () => {
-    let s = act(createInitialState(202)).state;
-    for (let i = 0; i < 20; i++) s = advanceReading(s).state;
-    expect(s.racks['B-07'].prog).toBe(1);
+    // Acted on while alerting, as the hold button requires: a calm holder
+    // stands CRAC-3 down (and un-acts B-07) two readings later.
+    let s = act(withRack(createInitialState(202), 'B-07', { state: 'critical', T: 34 })).state;
+    const landed: number[] = [];
+    for (let i = 0; i < 20; i++) {
+      s = advanceReading(s).state;
+      if (s.racks['B-07'].acted === 'fix') landed.push(s.racks['B-07'].prog);
+    }
+    expect(landed.length).toBeGreaterThan(5);
+    expect(landed.slice(2)).toEqual(landed.slice(2).map(() => 1));
   });
 
   it("A-03's cooling ramps in gradually", () => {

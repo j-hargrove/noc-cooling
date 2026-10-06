@@ -90,7 +90,7 @@ test.describe('live app', () => {
     await expect(page.locator('.status')).toContainText('CRAC-3');
     await expect(page.getByRole('dialog')).toContainText('Incident resolved', { timeout: 20_000 });
     await expect(page.locator('.log')).toContainText('CRAC-3 fan boosted to 100% by you');
-    await expect(page.locator('.log')).toContainText('CRAC-3 returned to 60% after resolution', { timeout: 5_000 });
+    await expect(page.locator('.log')).toContainText('CRAC-3 returned to 60%', { timeout: 5_000 });
     await page.getByRole('button', { name: 'Done' }).click();
     await expect(page.getByRole('dialog')).toHaveCount(0);
   });
@@ -148,6 +148,38 @@ test.describe('live app', () => {
     await expect(second).toBeDisabled();
     await expect(page.locator('.intro')).toHaveCount(0);
     await expect(page.locator('.log')).toContainText('Simulated: fan failure on rack A-03');
+  });
+
+  /** Starts the incident and holds to boost B-07 as soon as the hold button appears. */
+  async function boostB07(page: Page) {
+    await page.getByLabel('Start from the lock screen').uncheck();
+    await page.getByRole('button', { name: 'Start the incident' }).click();
+    const hold = page.locator('.hold');
+    await expect(hold).toBeVisible({ timeout: 15_000 });
+    const box = (await hold.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.down();
+    await page.waitForTimeout(900); // holdMs is 750
+    await page.mouse.up();
+    await expect(page.locator('.log')).toContainText('CRAC-3 fan boosted to 100% by you');
+  }
+
+  test('regression: boost B-07, fail a second rack, let A-03 shut down — the boost still ends', async ({ page }) => {
+    await page.goto(LIVE);
+    await boostB07(page);
+    await page.getByRole('button', { name: 'Fail a second rack' }).click();
+    await expect(page.getByRole('dialog')).toContainText('Rack A-03 shut down', { timeout: 30_000 });
+    await expect(page.locator('.log')).toContainText('CRAC-3 returned to 60%', { timeout: 5_000 });
+  });
+
+  test('panel: reset mid-boost leaves no boost and no stand-down behind', async ({ page }) => {
+    await page.goto(LIVE);
+    await boostB07(page);
+    await page.getByRole('button', { name: 'Reset' }).click();
+    await expect(page.locator('.log li')).toHaveText(['Nothing logged yet.']);
+    await page.waitForTimeout(1_000); // 10 readings: well past any stand-down that could have been left pending
+    await expect(page.locator('.log li')).toHaveText(['Nothing logged yet.']);
+    await expect(page.getByText('All 16 racks in range. Nothing needs your attention.')).toBeVisible();
   });
 });
 
