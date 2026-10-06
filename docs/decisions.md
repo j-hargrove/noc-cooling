@@ -45,7 +45,10 @@
   The hand-off comes 2 readings after acting, so 1.5–3.0s by design, not the
   prototype's fixed 1.6s: timed events are reading counts throughout.
 - Airflow goes only where the operator sent it, stays on that rack until
-  stand-down, and CRAC-3 stands down to 60% after every resolution.
+  stand-down. CRAC-3 stands down to 60% 2 readings after every rack holding
+  the boost has settled back to calm or shut down, not on the incident
+  outcome: another rack failing never keeps a boost on. If a holder shut down,
+  the boost clears but the aisle heat load is left alone.
 - Second rack (A-03 fan failure) fails ~14 readings after the first outcome,
   or on demand from the panel. Its fix: "Hold to cool A-03" (CRAC-3 aimed at it
   plus workload shift).
