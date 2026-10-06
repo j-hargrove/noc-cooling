@@ -18,7 +18,7 @@ import {
   type StepResult,
 } from '../sim/engine';
 import { shownState } from '../sim/rack';
-import { focused } from '../sim/selectors';
+import { focused, incidentActive } from '../sim/selectors';
 import type { LogEntry, SimEvent, SimState } from '../sim/types';
 import type { FocusRequest, InstrumentProps, ShockCue } from '../ui/Instrument';
 import type { EventPillCue } from '../ui/ThermalField';
@@ -49,6 +49,8 @@ export interface LiveSimOptions {
 /** What the demo panel (src/demo) needs — contract/components.md §9's data, minus the panel-local checkboxes. */
 export interface LiveDemoControls {
   heatLoad: number;
+  /** The slider is locked while an incident is running (see setHeatLoad). */
+  heatLocked: boolean;
   running: boolean;
   secondArmed: boolean;
   log: LogEntry[];
@@ -249,6 +251,7 @@ export function useLiveSim({ seed, readMs = READ_INTERVAL_MS, getRunOptions }: L
     };
 
     const setHeat = (v: number) => {
+      if (incidentActive(simRef.current)) return;
       setRunArmed(true);
       commit(noEvents(setHeatLoad(simRef.current, v)));
     };
@@ -326,6 +329,7 @@ export function useLiveSim({ seed, readMs = READ_INTERVAL_MS, getRunOptions }: L
 
   const demo: LiveDemoControls = {
     heatLoad: sim.heat,
+    heatLocked: incidentActive(sim),
     running: !runArmed,
     secondArmed: !sim.racks['A-03'].fault,
     log: sim.log,

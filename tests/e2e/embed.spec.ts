@@ -47,7 +47,7 @@ test.describe('embed, wide frame (820×844)', () => {
     await expect(f.locator('.device .app')).toBeVisible();
     await expect(f.getByRole('complementary', { name: 'Demo controls' })).toBeVisible();
     await expect(f.getByRole('button', { name: 'Run the incident' })).toBeVisible();
-    await expect(f.getByLabel('Heat load in aisle 4')).toBeVisible();
+    await expect(f.getByLabel('Rack B-07 heat load')).toBeVisible();
     await expect(f.getByText('Action log')).toBeVisible();
     // Chrome the host page supplies itself:
     await expect(f.locator('h1')).toHaveCount(0);

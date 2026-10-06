@@ -3,6 +3,13 @@ import { act, advanceReading, createInitialState, failSecondRack, override, setH
 import { withRack } from './test-support';
 import type { SimState } from './types';
 
+/** Steps until `done`, failing the test if it takes more than `max` readings. */
+function until(s: SimState, done: (s: SimState) => boolean, max = 200): SimState {
+  for (let i = 0; i < max && !done(s); i++) s = advanceReading(s).state;
+  expect(done(s), 'condition reached').toBe(true);
+  return s;
+}
+
 describe('incident heat ramp (docs/decisions.md: +35 per reading)', () => {
   it('ramps 30 → 65 → 88 and stops at the target', () => {
     let s = startIncident(createInitialState(530)).state;
@@ -35,12 +42,42 @@ describe('heat-load slider (demo panel)', () => {
     expect(s.heat).toBe(65);
   });
 
-  it("cancels an incident's ramp in flight — the operator's hand on the slider wins", () => {
-    const running = startIncident(createInitialState(502)).state;
-    expect(running.incident).toBe(88);
-    const s = setHeatLoad(running, 40);
+  it('regression: locked while an incident runs — dragging to 20 on the next reading used to strand it', () => {
+    // Run, then drag to 20 one reading in: the ramp was cancelled before
+    // B-07 peaked, so the incident could never resolve (started, never ended).
+    let s = advanceReading(startIncident(createInitialState(502)).state).state;
+    expect(s.heat).toBe(65);
+    expect(setHeatLoad(s, 20)).toBe(s);
+    s = until(s, (x) => x.ended !== null, 200);
+    expect(s.heat).toBe(88); // the ramp ran to its target
+  });
+
+  it('unlocks at the outcome, on stand-down and on reset; failing a second rack re-locks it', () => {
+    let s = startIncident(createInitialState(507), { autoSecond: false }).state;
+    s = until(s, (x) => x.racks['B-07'].state !== 'calm');
+    s = act(s).state;
+    s = until(s, (x) => x.ended === 'ok');
+    expect(setHeatLoad(s, 50).heat).toBe(50); // outcome
+    s = until(s, (x) => !x.boosted);
+    expect(s.heat).toBe(30); // stand-down's reset, unchanged
+    expect(setHeatLoad(s, 50).heat).toBe(50); // after stand-down
+    const reopened = failSecondRack(s).state;
+    expect(setHeatLoad(reopened, 50)).toBe(reopened); // incident running again
+    expect(setHeatLoad(createInitialState(508), 50).heat).toBe(50); // reset / idle aisle
+  });
+
+  it('never lowered by starting an incident: a load above 88 stays put', () => {
+    let s = startIncident(setHeatLoad(createInitialState(509), 100)).state;
+    for (let i = 0; i < 3; i++) {
+      s = advanceReading(s).state;
+      expect(s.heat).toBe(100);
+    }
     expect(s.incident).toBeNull();
-    expect(advanceReading(s).state.heat).toBe(40); // no longer ramping toward 88
+    // Below the target it still ramps up as before: 30 → 65 → 88.
+    let t = startIncident(createInitialState(510)).state;
+    t = advanceReading(t).state;
+    expect(t.heat).toBe(65);
+    expect(advanceReading(t).state.heat).toBe(88);
   });
 
   it('clamps to 0..100 and rounds to whole percent', () => {

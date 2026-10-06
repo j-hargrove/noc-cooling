@@ -2,6 +2,7 @@ import type { LogEntry } from '../sim/types';
 
 export interface PanelProps {
   heatLoad: number;
+  heatLocked: boolean;
   running: boolean;
   secondArmed: boolean;
   fromLock: boolean;
@@ -29,6 +30,7 @@ export interface PanelProps {
  */
 export function Panel({
   heatLoad,
+  heatLocked,
   running,
   secondArmed,
   fromLock,
@@ -65,9 +67,9 @@ export function Panel({
       )}
       <div className="ctrl">
         <label htmlFor="heatIn">
-          Heat load in aisle 4 <output htmlFor="heatIn">{heatLoad}%</output>
+          Rack B-07 heat load <output htmlFor="heatIn">{heatLoad}%</output>
         </label>
-        <input type="range" id="heatIn" min={0} max={100} value={heatLoad} onChange={(e) => onHeatLoad(Number(e.currentTarget.value))} />
+        <input type="range" id="heatIn" min={0} max={100} value={heatLoad} disabled={heatLocked} onChange={(e) => onHeatLoad(Number(e.currentTarget.value))} />
       </div>
       <div className="btns">
         <button type="button" className="btn primary" disabled={running} onClick={onRun}>

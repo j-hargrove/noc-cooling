@@ -141,6 +141,22 @@ test.describe('live app', () => {
     await expect(page.locator('.log li')).toHaveText(['Nothing logged yet.']);
   });
 
+  test('regression: the heat-load slider is locked while the incident runs, and unlocks at the outcome and on reset', async ({ page }) => {
+    await page.goto(LIVE);
+    const slider = page.getByLabel('Rack B-07 heat load');
+    await expect(slider).toBeEnabled();
+    await page.getByLabel('Start from the lock screen').uncheck();
+    await page.getByRole('button', { name: 'Start the incident' }).click();
+    // Locked from the first reading, so it can't be dragged down before B-07 peaks; still shows the ramp.
+    await expect(slider).toBeDisabled();
+    await expect(slider).toHaveValue('88');
+    await expect(page.getByRole('dialog')).toContainText('Rack B-07 shut down', { timeout: 30_000 });
+    await expect(slider).toBeEnabled();
+    await page.getByRole('button', { name: 'Reset' }).click();
+    await expect(slider).toBeEnabled();
+    await expect(slider).toHaveValue('30');
+  });
+
   test('panel: fail a second rack queues A-03', async ({ page }) => {
     await page.goto(LIVE);
     const second = page.getByRole('button', { name: 'Fail a second rack' });
