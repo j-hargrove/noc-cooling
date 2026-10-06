@@ -101,7 +101,7 @@ function outcomeMixed(): Fixture {
   // B-07 fails unaddressed, the aftershock/A-03 trigger reopens the incident
   // (ended -> null, phase 2), and *that* incident resolving while B-07 is
   // still down is what produces "mixed" — not two racks failing at once.
-  let state = { ...startIncident(base(11), { autoSecond: false }).state, heat: 100 };
+  let state = { ...startIncident(base(11), { autoSecond: false }).state, heat: 88 };
   state = run(state, 400); // B-07 unaddressed: throttles, shuts down (ended='fail')
   state = failSecondRack(state).state; // reopens: ended=null, phase=2, phaseRack='A-03'
   state = run(state, 15); // A-03 escalates; focus rule pulls focus onto it (B-07 is down)
@@ -111,7 +111,7 @@ function outcomeMixed(): Fixture {
 }
 
 function outcomeFail(): Fixture {
-  let state = { ...startIncident(base(12), { autoSecond: false }).state, heat: 100 };
+  let state = { ...startIncident(base(12), { autoSecond: false }).state, heat: 88 };
   state = run(state, 400); // unaddressed: throttles, then shuts down
   return { id: 'outcome-fail', label: 'Outcome: shut down', description: 'Left unaddressed: throttled, then shut down at 38°C.', state };
 }

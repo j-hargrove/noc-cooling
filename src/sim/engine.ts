@@ -45,7 +45,7 @@ import {
 import { fmt } from './format';
 import { cloneRack, classify, makeRack, rate, target } from './rack';
 import { nextSigned, type Seed } from './rng';
-import { nextUnhandled, others, resolveAim } from './selectors';
+import { incidentActive, nextUnhandled, others, resolveAim } from './selectors';
 import type { AlertState, LogEntry, Outcome, RackId, SimEvent, SimState } from './types';
 
 export type StepResult = { state: SimState; events: SimEvent[] };
@@ -305,7 +305,8 @@ export function advanceReading(state: SimState): StepResult {
   s.n += 1;
 
   if (s.incident != null) {
-    s.heat = Math.min(s.incident, s.heat + INCIDENT_HEAT_STEP);
+    // Never lowers the load: an aisle already above the incident's target stays put.
+    s.heat = Math.max(s.heat, Math.min(s.incident, s.heat + INCIDENT_HEAT_STEP));
     if (s.heat >= s.incident) s.incident = null;
   }
   if (s.secondAt != null && s.n >= s.secondAt) {
@@ -482,11 +483,13 @@ export function failSecondRack(state: SimState, opts: { headStart?: boolean } = 
 }
 
 /**
- * The demo panel's heat-load slider. Takes the aisle straight to `heat` and
- * cancels any ramp an incident had in flight — the operator's hand on the
- * slider wins (reference/prototype.html heatIn 'input').
+ * The demo panel's heat-load slider. Takes the aisle straight to `heat`.
+ * Locked while an incident is running: pulling the load down before the
+ * incident rack peaked left it unable ever to resolve (the prototype let
+ * that through). Unlocks at the outcome, or on reset.
  */
 export function setHeatLoad(state: SimState, heat: number): SimState {
+  if (incidentActive(state)) return state;
   const h = Math.max(0, Math.min(100, Math.round(heat)));
   if (state.heat === h && state.incident === null) return state;
   return { ...state, heat: h, incident: null };

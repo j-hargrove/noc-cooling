@@ -43,6 +43,10 @@
   width: 100%;
   accent-color: var(--color-demo-heat-slider);
 }
+.ctrl input[type='range']:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
 .btns {
   display: flex;
   gap: var(--space-demo-buttons-gap);

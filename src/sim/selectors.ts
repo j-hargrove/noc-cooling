@@ -1,6 +1,11 @@
 import { RACK_IDS, SEV, SIM_SECONDS_PER_READING } from './constants';
 import type { RackId, RackModel, SimState } from './types';
 
+/** An incident is running: started and not yet at an outcome. The heat-load slider is locked while it is. */
+export function incidentActive(state: Pick<SimState, 'started' | 'ended'>): boolean {
+  return state.started && !state.ended;
+}
+
 export function focused(state: Pick<SimState, 'racks' | 'focus'>): RackModel {
   return state.racks[state.focus];
 }
